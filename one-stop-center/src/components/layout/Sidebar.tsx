@@ -2,7 +2,6 @@ import {
   BookOpen,
   Home,
   LayoutGrid,
-  MessageSquare,
   Settings,
   UserRound,
 } from 'lucide-react'
@@ -10,7 +9,6 @@ import { NavLink } from 'react-router-dom'
 
 const navItems = [
   { label: 'Home', icon: Home, path: '/' },
-  { label: 'Standard Request', icon: MessageSquare, path: '/requests' },
   { label: 'Modules', icon: LayoutGrid, path: '/modules' },
   { label: 'Staff System', icon: UserRound, path: '/staff/hamiduddin' },
   { label: 'Library', icon: BookOpen, path: '/library' },
