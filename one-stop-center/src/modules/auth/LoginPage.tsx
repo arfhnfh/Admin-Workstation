@@ -38,7 +38,7 @@ export default function LoginPage() {
       <div className="w-full max-w-3xl rounded-[32px] bg-white/90 p-10 shadow-pastel">
         <div className="text-center">
           <p className="text-sm uppercase tracking-[0.5em] text-text-muted">Welcome back</p>
-          <h1 className="mt-3 text-4xl font-semibold text-charcoal">Sign in to Admin Workstation</h1>
+          <h1 className="mt-3 text-4xl font-semibold text-charcoal">Sign in to Arifah Workstation</h1>
           <p className="mt-2 text-text-muted">
             Staff members must use their @aafiyatgroup.com email. External interns/partners should sign
             up first using their personal email.
