@@ -25,8 +25,8 @@ export function Sidebar() {
           <BookOpen className="h-6 w-6" />
         </div>
         <div>
-          <p className="text-sm text-text-muted">aafiyat</p>
-          <p className="text-lg font-semibold text-charcoal">Portal</p>
+          <p className="text-sm text-text-muted">Admin</p>
+          <p className="text-lg font-semibold text-charcoal">Workstation</p>
         </div>
       </div>
 
