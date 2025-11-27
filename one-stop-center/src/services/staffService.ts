@@ -1,6 +1,10 @@
 import { supabase } from '@/lib/supabaseClient'
 import type { StaffProfile } from '@/types/staff'
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+}
+
 // Create empty profile template
 function createEmptyProfile(userId: string, email: string): StaffProfile {
   return {
@@ -15,7 +19,7 @@ function createEmptyProfile(userId: string, email: string): StaffProfile {
     maritalStatus: '',
     nationality: 'MALAYSIAN',
     work: {
-      email: email,
+      email,
       location: '',
       department: '',
       position: '',
@@ -46,10 +50,18 @@ export async function fetchStaffProfile(staffId: string): Promise<StaffProfile |
     return null
   }
 
-  const { data, error } = await supabase.from('staff_view').select('*').eq('id', staffId).single()
+  let query = supabase.from('staff_view').select('*').limit(1)
+
+  if (isUuid(staffId)) {
+    query = query.eq('id', staffId)
+  } else {
+    // Allow friendly URLs by matching the short name (aliased as name in the view)
+    query = query.ilike('name', staffId)
+  }
+
+  const { data, error } = await query.single()
 
   if (error || !data) {
-    // Return null instead of mock data - user needs to fill their own profile
     return null
   }
 

@@ -3,8 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { LogIn, ShieldCheck } from 'lucide-react'
 import { useAuthContext } from '@/hooks/useAuthContext'
 
-const STAFF_DOMAIN = '@aafiyatgroup.com'
-
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -15,19 +13,16 @@ export default function LoginPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { login } = useAuthContext()
+  const STAFF_DOMAIN = '@aafiyatgroup.com'
+  const normalizedEmail = staffEmail.trim().toLowerCase()
+  const isStaffEmail = normalizedEmail.endsWith(STAFF_DOMAIN)
 
   const handleStaffLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsSubmitting(true)
     setStatusMessage(null)
-    const email = staffEmail.trim().toLowerCase()
-    if (!email.endsWith(STAFF_DOMAIN)) {
-      setStatusMessage('Staff login requires an @aafiyatgroup.com email')
-      setIsSubmitting(false)
-      return
-    }
 
-    const { error } = await login(email, staffPassword)
+    const { error } = await login(normalizedEmail, staffPassword)
     if (error) {
       setStatusMessage(error.message)
       setIsSubmitting(false)
@@ -63,6 +58,11 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-6 space-y-4">
+            {!isStaffEmail && normalizedEmail && (
+              <div className="rounded-2xl bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-600">
+                This looks like a personal email. Make sure your access has been approved before signing in.
+              </div>
+            )}
             <div>
               <label className="text-xs font-semibold text-text-muted">Email</label>
               <input
