@@ -20,6 +20,11 @@ export interface LibraryOverview {
   chats: LibraryChatMessage[]
 }
 
+function getFallbackAvatar(name: string) {
+  const safeName = encodeURIComponent(name || 'User')
+  return `https://ui-avatars.com/api/?name=${safeName}&background=ded2fb&color=2e2a3b`
+}
+
 export async function fetchLibraryOverview(): Promise<LibraryOverview> {
   if (!supabase) {
     const store = useLibraryAdminStore.getState()
@@ -130,10 +135,33 @@ export async function fetchLibraryOverview(): Promise<LibraryOverview> {
   store.setCategories(resolvedCategories)
   store.setBooks(normalizedBooks)
 
+  let dynamicLeaderboard: LibraryLeaderboardEntry[] = []
+  try {
+    const { data: leaderboardRows, error: leaderboardError } = await supabase.rpc('get_library_leaderboard', {
+      limit_count: 10,
+    })
+
+    if (!leaderboardError && leaderboardRows) {
+      dynamicLeaderboard = (leaderboardRows as Array<{
+        identifier: string
+        display_name: string
+        avatar_url: string | null
+        books_borrowed: number | string
+      }>).map((row) => ({
+        staffId: row.identifier,
+        name: row.display_name,
+        avatar: row.avatar_url && row.avatar_url.length > 0 ? row.avatar_url : getFallbackAvatar(row.display_name),
+        borrowedCount: typeof row.books_borrowed === 'string' ? parseInt(row.books_borrowed, 10) : row.books_borrowed,
+      }))
+    }
+  } catch (error) {
+    console.warn('Failed to load Supabase leaderboard; falling back to mock leaderboard', error)
+  }
+
   return {
     categories: resolvedCategories,
     books: normalizedBooks,
-    leaderboard,
+    leaderboard: dynamicLeaderboard.length ? dynamicLeaderboard : leaderboard,
     chats: chatMessages,
   }
 }
@@ -349,94 +377,155 @@ export async function createBookLoan(input: CreateLoanInput) {
   return data
 }
 
+export type ScanMode = 'borrow' | 'return'
+
 export interface ScanResult {
-  pickupDate: string
-  dueDate: string
+  pickupDate?: string
+  dueDate?: string
+  mode: ScanMode
+  message?: string
 }
 
 export async function scanBookQrCode(
   bookId: string,
   borrowerName: string,
   copyId?: string,
+  mode: ScanMode = 'borrow',
 ): Promise<ScanResult | void> {
+  const normalizedRequester = borrowerName?.trim().toLowerCase()
+  if (!normalizedRequester) {
+    throw new Error('Unable to identify the staff account. Please sign in again.')
+  }
+
   if (!supabase) {
-    const pickupDate = new Date().toISOString()
+    const now = new Date().toISOString()
+    if (mode === 'return') {
+      console.info('Mock QR return scan', { bookId, copyId, borrowerName })
+      return { mode: 'return', pickupDate: now, dueDate: now, message: 'Mock return recorded' }
+    }
     const dueDate = new Date()
     dueDate.setDate(dueDate.getDate() + 14)
-    console.info('Mock QR scan', { bookId, copyId, borrowerName, pickupDate, dueDate: dueDate.toISOString() })
-    return { pickupDate, dueDate: dueDate.toISOString() }
+    console.info('Mock QR borrow scan', { bookId, copyId, borrowerName, pickupDate: now, dueDate: dueDate.toISOString() })
+    return { pickupDate: now, dueDate: dueDate.toISOString(), mode: 'borrow' }
   }
 
   // Find available copy if copyId not provided
   let targetCopyId = copyId
+  if (mode === 'borrow') {
+    if (!targetCopyId) {
+      const { data: copy } = await supabase
+        .from('book_copies')
+        .select('id')
+        .eq('book_id', bookId)
+        .eq('status', 'AVAILABLE')
+        .limit(1)
+        .maybeSingle()
+      targetCopyId = copy?.id
+    }
+
+    if (!targetCopyId) {
+      const { data: copies } = await supabase.from('book_copies').select('status').eq('book_id', bookId)
+      if (copies && copies.length > 0) {
+        const allOnLoan = copies.every((copy: any) => copy.status === 'ON_LOAN')
+        if (allOnLoan) {
+          throw new Error('All copies of this book are currently on loan. Please try another book.')
+        }
+      }
+      throw new Error('No available copy found for this book. Please contact admin.')
+    }
+
+    const pickupDate = new Date().toISOString()
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 14)
+
+    const { data: book } = await supabase.from('books').select('max_loan_days').eq('id', bookId).single()
+    if (book?.max_loan_days) {
+      dueDate.setDate(dueDate.getDate() + (book.max_loan_days - 14))
+    }
+
+    const { error: loanError } = await supabase
+      .from('book_loans')
+      .insert({
+        copy_id: targetCopyId,
+        borrower_name: borrowerName.trim(),
+        loan_status: 'ON_LOAN',
+        loaned_at: pickupDate,
+        due_at: dueDate.toISOString(),
+      })
+
+    if (loanError) {
+      throw new Error(loanError.message)
+    }
+
+    const { error: copyError } = await supabase.from('book_copies').update({ status: 'ON_LOAN' }).eq('id', targetCopyId)
+    if (copyError) {
+      throw new Error(copyError.message)
+    }
+
+    return { pickupDate, dueDate: dueDate.toISOString(), mode: 'borrow' }
+  }
+
+  // Return flow
   if (!targetCopyId) {
     const { data: copy } = await supabase
       .from('book_copies')
       .select('id')
       .eq('book_id', bookId)
-      .eq('status', 'AVAILABLE')
+      .eq('status', 'ON_LOAN')
+      .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle()
     targetCopyId = copy?.id
   }
 
   if (!targetCopyId) {
-    // Check if book exists but all copies are on loan
-    const { data: copies } = await supabase
-      .from('book_copies')
-      .select('status')
-      .eq('book_id', bookId)
-    
-    if (copies && copies.length > 0) {
-      const allOnLoan = copies.every((copy: any) => copy.status === 'ON_LOAN')
-      if (allOnLoan) {
-        throw new Error('All copies of this book are currently on loan. Please try another book.')
-      }
-    }
-    throw new Error('No available copy found for this book. Please contact admin.')
+    throw new Error('No active loan found for this book.')
   }
 
-  // Create loan record
-  const pickupDate = new Date().toISOString()
-  const dueDate = new Date()
-  dueDate.setDate(dueDate.getDate() + 14) // Default 14 days, will be updated with book's max_loan_days
-
-  // Get book's max_loan_days
-  const { data: book } = await supabase
-    .from('books')
-    .select('max_loan_days')
-    .eq('id', bookId)
-    .single()
-
-  if (book?.max_loan_days) {
-    dueDate.setDate(dueDate.getDate() + (book.max_loan_days - 14))
-  }
-
-  const { error: loanError } = await supabase
+  const { data: activeLoan, error: activeLoanError } = await supabase
     .from('book_loans')
-    .insert({
-      copy_id: targetCopyId,
-      borrower_name: borrowerName,
-      loan_status: 'ON_LOAN',
-      loaned_at: pickupDate,
-      due_at: dueDate.toISOString(),
-    })
+    .select('id, loaned_at, due_at, borrower_name')
+    .eq('copy_id', targetCopyId)
+    .eq('loan_status', 'ON_LOAN')
+    .order('loaned_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-  if (loanError) {
-    throw new Error(loanError.message)
+  if (activeLoanError || !activeLoan) {
+    throw new Error('Unable to locate the active loan record for this book.')
   }
 
-  // Update copy status to ON_LOAN
-  const { error: copyError } = await supabase
-    .from('book_copies')
-    .update({ status: 'ON_LOAN' })
-    .eq('id', targetCopyId)
-
-  if (copyError) {
-    throw new Error(copyError.message)
+  const normalizedLoanBorrower = activeLoan.borrower_name?.trim().toLowerCase()
+  if (!normalizedLoanBorrower) {
+    throw new Error('The active loan is missing borrower information. Please contact admin.')
   }
 
-  return { pickupDate, dueDate: dueDate.toISOString() }
+  if (normalizedRequester !== normalizedLoanBorrower) {
+    throw new Error(`Only ${activeLoan.borrower_name ?? 'the original borrower'} can return this book.`)
+  }
+
+  const returnedAt = new Date().toISOString()
+
+  const { error: returnError } = await supabase
+    .from('book_loans')
+    .update({ loan_status: 'RETURNED', returned_at: returnedAt })
+    .eq('id', activeLoan.id)
+
+  if (returnError) {
+    throw new Error(returnError.message)
+  }
+
+  const { error: copyResetError } = await supabase.from('book_copies').update({ status: 'AVAILABLE' }).eq('id', targetCopyId)
+  if (copyResetError) {
+    throw new Error(copyResetError.message)
+  }
+
+  return {
+    mode: 'return',
+    pickupDate: activeLoan.loaned_at ?? returnedAt,
+    dueDate: activeLoan.due_at ?? returnedAt,
+    message: 'Book returned successfully',
+  }
 }
 
 export async function sendChatMessage(message: LibraryChatMessage): Promise<void> {

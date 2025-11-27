@@ -31,10 +31,11 @@ npm run dev             # open http://localhost:5173
 ## 🗄️ Database & Supabase
 
 1. Create a Supabase project.
-2. Run the SQL in `supabase/migrations/0001_init.sql` (via Supabase SQL Editor or CLI) to provision:
+2. Run the SQL migrations in `supabase/migrations` (via Supabase SQL Editor or CLI). They provision:
    - Staff core tables + view (`staff_view`) that powers the profile UI
    - Library catalog (`books`, `book_categories`, `book_copies`, `book_loans`)
    - Row-Level Security policies so staff read only their data while admins manage everything
+   - Helper functions (admin bootstrap + leaderboard RPC) used by the UI
 3. Generate service role and anon keys, then set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in `.env`.
 
 Until real data exists, the UI automatically falls back to the curated mock datasets in `src/data`.

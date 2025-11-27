@@ -34,6 +34,16 @@ import { isHotBook, useLibraryAdminStore } from '@/store/libraryAdminStore'
 import { leaderboard as mockLeaderboard } from '@/data/mockLibrary'
 import { useAuthContext } from '@/hooks/useAuthContext'
 
+function formatBorrowerDisplay(name?: string | null) {
+  if (!name) return ''
+  const trimmed = name.trim()
+  if (!trimmed) return ''
+  if (trimmed.includes('@')) {
+    return trimmed.split('@')[0]
+  }
+  return trimmed
+}
+
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   TabletSmartphone,
   Sparkles,
@@ -84,6 +94,7 @@ function BookCard({
   onLoanSaved,
   onBorrowRequest,
   borrowerName,
+  borrowerIdentifier,
 }: {
   book: LibraryBook
   isAdmin: boolean
@@ -91,6 +102,7 @@ function BookCard({
   onLoanSaved: () => void
   onBorrowRequest: (book: LibraryBook) => void
   borrowerName: string
+  borrowerIdentifier?: string
 }) {
   const statusClass =
     book.status === 'available'
@@ -108,7 +120,22 @@ function BookCard({
   const [scanSuccessInfo, setScanSuccessInfo] = useState<ScanResult | null>(null)
   const qrInputRef = useRef<HTMLInputElement>(null)
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null)
+  const scannerActiveRef = useRef(false)
+  const [scanMode, setScanMode] = useState<'borrow' | 'return'>('borrow')
   const scannerElementId = useMemo(() => `qr-reader-${book.id}`, [book.id])
+  const applyScannerStyles = useCallback(() => {
+    const host = document.getElementById(scannerElementId)
+    if (!host) return
+    const targets = host.querySelectorAll('video, canvas')
+    targets.forEach((node) => {
+      const el = node as HTMLElement
+      el.style.width = '100%'
+      el.style.height = '100%'
+      el.style.objectFit = 'cover'
+      el.style.borderRadius = '24px'
+      el.style.display = 'block'
+    })
+  }, [scannerElementId])
 
   const handlePickupChange = (value: string) => {
     setPickupDate(value)
@@ -196,9 +223,12 @@ function BookCard({
 
         // Check if scanned book ID matches current book
         if (bookId === book.id) {
-          const result = await scanBookQrCode(book.id, borrowerName, book.copyId)
+          const result = await scanBookQrCode(book.id, borrowerName, book.copyId, scanMode)
           if (result) {
             setScanSuccessInfo(result)
+            setTimeout(() => {
+              setShowQrScanner(false)
+            }, 600)
           }
           onLoanSaved()
         } else {
@@ -213,20 +243,28 @@ function BookCard({
         setIsProcessingScan(false)
       }
     },
-    [book.copyId, book.id, isProcessingScan, onLoanSaved, borrowerName],
+    [book.copyId, book.id, isProcessingScan, onLoanSaved, borrowerName, scanMode],
   )
 
   useEffect(() => {
-    if (!showQrScanner) {
-      if (html5QrCodeRef.current) {
+    const stopScanner = () => {
+      if (html5QrCodeRef.current && scannerActiveRef.current) {
         html5QrCodeRef.current
           .stop()
           .then(() => html5QrCodeRef.current?.clear())
           .catch((error) => console.info('Scanner already stopped', error?.message))
           .finally(() => {
             html5QrCodeRef.current = null
+            scannerActiveRef.current = false
           })
+      } else {
+        html5QrCodeRef.current = null
+        scannerActiveRef.current = false
       }
+    }
+
+    if (!showQrScanner) {
+      stopScanner()
       return
     }
 
@@ -248,19 +286,27 @@ function BookCard({
           console.info('QR scan attempt', error)
         },
       )
+      .then(() => {
+        scannerActiveRef.current = true
+        requestAnimationFrame(applyScannerStyles)
+      })
       .catch((error) => {
         console.error('Failed to start QR scanner', error)
         setScannerError(error?.message ?? 'Unable to access camera. Please allow permission.')
+        scannerActiveRef.current = false
       })
 
     return () => {
-      qrScanner
-        .stop()
-        .then(() => qrScanner.clear())
-        .catch((error) => console.info('Scanner already stopped', error?.message))
+      if (scannerActiveRef.current) {
+        qrScanner
+          .stop()
+          .then(() => qrScanner.clear())
+          .catch((error) => console.info('Scanner already stopped', error?.message))
+      }
       html5QrCodeRef.current = null
+      scannerActiveRef.current = false
     }
-  }, [processQrValue, scannerElementId, showQrScanner])
+  }, [applyScannerStyles, processQrValue, scannerElementId, showQrScanner])
 
   const handleQrInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim()
@@ -306,7 +352,7 @@ function BookCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-text-muted">
           <Users className="h-4 w-4" />
-          {book.borrowerName ? `Borrowed by ${book.borrowerName}` : 'Available for pickup'}
+          {book.borrowerName ? `Borrowed by ${formatBorrowerDisplay(book.borrowerName)}` : 'Available for pickup'}
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
           {book.status === 'available' ? 'Available' : 'Not available'}
@@ -343,13 +389,39 @@ function BookCard({
         <button
           type="button"
           onClick={() => {
+            setScanMode('borrow')
             setShowQrScanner(true)
             setTimeout(() => qrInputRef.current?.focus(), 100)
           }}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl border border-brand.violet/40 px-4 py-2 text-sm font-semibold text-brand.violet transition hover:bg-brand.violet/5"
+          disabled={!borrowerIdentifier}
+          className={classNames(
+            'w-full flex items-center justify-center gap-2 rounded-2xl border border-brand.violet/40 px-4 py-2 text-sm font-semibold transition',
+            borrowerIdentifier
+              ? 'text-brand.violet hover:bg-brand.violet/5'
+              : 'text-text-muted opacity-60 cursor-not-allowed',
+          )}
         >
           <QrCode className="h-4 w-4" />
           Scan QR Code
+        </button>
+      )}
+
+      {/* Return button */}
+      {isStaff && !isAdmin && book.status !== 'available' && (
+        <button
+          type="button"
+          onClick={() => {
+            setScanMode('return')
+            setShowQrScanner(true)
+            setTimeout(() => qrInputRef.current?.focus(), 100)
+          }}
+          disabled={!borrowerIdentifier}
+          className={classNames(
+            'w-full rounded-2xl px-4 py-2 text-sm font-semibold text-white shadow-card transition',
+            borrowerIdentifier ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-300 cursor-not-allowed',
+          )}
+        >
+          Return Book
         </button>
       )}
 
@@ -383,10 +455,26 @@ function BookCard({
                 </p>
                 {scanSuccessInfo && (
                   <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
-                    <p className="font-semibold">Loan recorded</p>
-                    <p>Start: {new Date(scanSuccessInfo.pickupDate).toLocaleString()}</p>
-                    <p>Due: {new Date(scanSuccessInfo.dueDate).toLocaleString()}</p>
-                    <p className="text-[11px] text-emerald-700">You can close this window once you acknowledge the dates.</p>
+                    <p className="font-semibold">
+                      {scanSuccessInfo.mode === 'return' ? 'Book returned!' : 'Loan recorded'}
+                    </p>
+                    {scanSuccessInfo.pickupDate && (
+                      <p>
+                        {scanSuccessInfo.mode === 'return' ? 'Loaned at' : 'Start'}:{' '}
+                        {new Date(scanSuccessInfo.pickupDate).toLocaleString()}
+                      </p>
+                    )}
+                    {scanSuccessInfo.dueDate && (
+                      <p>
+                        {scanSuccessInfo.mode === 'return' ? 'Was due' : 'Due'}:{' '}
+                        {new Date(scanSuccessInfo.dueDate).toLocaleString()}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-emerald-700">
+                      {scanSuccessInfo.mode === 'return'
+                        ? 'You can close this window now. Thank you for returning the book!'
+                        : 'You can close this window once you acknowledge the dates.'}
+                    </p>
                   </div>
                 )}
                 {scannerError && <p className="mb-3 text-xs font-semibold text-rose-600">{scannerError}</p>}
@@ -480,7 +568,7 @@ function BookCard({
                 )}
                 {book.loans.map((loan) => (
                   <div key={loan.id} className="rounded-2xl border border-card-border bg-brand.sand/30 p-4 text-sm">
-                    <p className="font-semibold text-charcoal">{loan.borrowerName}</p>
+                    <p className="font-semibold text-charcoal">{formatBorrowerDisplay(loan.borrowerName)}</p>
                     <p className="mt-1 text-xs text-text-muted">Status: {loan.loanStatus}</p>
                     <p className="text-xs text-text-muted">
                       Loaned: {loan.loanedAt ? new Date(loan.loanedAt).toLocaleDateString() : '-'}
@@ -624,19 +712,22 @@ function ChatPanel({
         <MessageCircle className="h-6 w-6 text-brand.violet" />
       </div>
       <div ref={chatContainerRef} className="mt-4 flex-1 space-y-4 overflow-y-auto">
-        {allChats.map((msg) => (
-          <div
-            key={msg.id}
-            className={classNames(
-              'max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-card',
-              msg.sender === 'staff'
-                ? 'ml-auto bg-brand.violet text-white'
-                : 'bg-brand.sand/80 text-charcoal',
-            )}
-          >
-            {msg.message}
-          </div>
-        ))}
+        {allChats.map((msg) => {
+          const isStaff = msg.sender === 'staff'
+          return (
+            <div
+              key={msg.id}
+              className={classNames(
+                'max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-card selection:bg-brand.violet/30 selection:text-charcoal',
+                isStaff
+                  ? 'ml-auto bg-brand.grape text-white'
+                  : 'bg-[#fff1e2] text-charcoal',
+              )}
+            >
+              {msg.message}
+            </div>
+          )
+        })}
         <div ref={messagesEndRef} />
       </div>
       <div className="mt-4 flex gap-2">
@@ -688,13 +779,15 @@ export default function LibraryHubPage() {
   }, [location.pathname])
 
   const handleBorrowRequest = async (book: LibraryBook) => {
-    const staffName = user?.email?.split('@')[0] || 'Staff'
+    const staffName = formatBorrowerDisplay(user?.email ?? 'Staff')
     const statusText = book.status === 'available' ? 'Available' : 'Not Available'
     let message = `📚 Book Request\n\nTitle: ${book.title}\nAuthor: ${book.author}\nStatus: ${statusText}`
 
     if (book.status === 'borrowed' && book.borrowerName && book.dueDate) {
       const loanStart = book.loans.find((l) => l.loanStatus === 'ON_LOAN')?.loanedAt
-      message += `\n\n⚠️ This book is currently borrowed by "${book.borrowerName}"\nLoan Period: ${loanStart ? new Date(loanStart).toLocaleDateString() : 'N/A'} - ${new Date(book.dueDate).toLocaleDateString()}`
+      message += `\n\n⚠️ This book is currently borrowed by "${formatBorrowerDisplay(book.borrowerName)}"\nLoan Period: ${
+        loanStart ? new Date(loanStart).toLocaleDateString() : 'N/A'
+      } - ${new Date(book.dueDate).toLocaleDateString()}`
     } else {
       message += `\n\n✅ Ready for pickup at Admin counter.`
     }
@@ -751,6 +844,8 @@ export default function LibraryHubPage() {
       return matchesSearch && matchesCategory
     })
   }, [books, searchTerm, activeCategory])
+
+  const currentBorrowerIdentifier = user?.email?.trim().toLowerCase() ?? ''
 
   return (
     <div className="space-y-8">
@@ -823,7 +918,8 @@ export default function LibraryHubPage() {
                   isStaff={role === 'staff'}
                   onLoanSaved={refreshOverview}
                   onBorrowRequest={handleBorrowRequest}
-                  borrowerName={user?.email?.split('@')[0] || 'Staff'}
+                  borrowerName={currentBorrowerIdentifier || user?.email || 'staff@unknown.local'}
+                  borrowerIdentifier={currentBorrowerIdentifier}
                 />
               ))}
               {!filteredBooks.length && (

@@ -119,10 +119,23 @@ export default function StaffProfilePage() {
     }
   }, [user, profile])
 
-  if (!profile || isLoading) {
+  if (!profile && isLoading) {
     return (
       <div className="flex h-full min-h-[70vh] items-center justify-center rounded-3xl bg-white/70 shadow-card">
         <div className="animate-pulse text-text-muted">Loading staff profile…</div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex h-full min-h-[70vh] items-center justify-center rounded-3xl bg-white/70 shadow-card">
+        <div className="space-y-4 text-center">
+          <p className="text-xl font-semibold text-charcoal">Profile not found</p>
+          <p className="text-sm text-text-muted">
+            We couldn’t find any staff data for this link. Please check the URL or ask your admin to create the profile.
+          </p>
+        </div>
       </div>
     )
   }

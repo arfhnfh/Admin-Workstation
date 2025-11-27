@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
 import { useAuthContext } from '@/hooks/useAuthContext'
 
-const STAFF_DOMAIN = '@aafiyatgroup.com'
-
 export default function SignupPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -12,26 +10,32 @@ export default function SignupPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { signUp } = useAuthContext()
+  const STAFF_DOMAIN = '@aafiyatgroup.com'
+  const normalizedEmail = email.trim().toLowerCase()
+  const isStaffEmail = normalizedEmail.endsWith(STAFF_DOMAIN)
+  const buttonColorClass = isStaffEmail
+    ? 'bg-[#8c4b2d] hover:bg-[#6f361f]'
+    : 'bg-brand.violet hover:bg-brand.violet/90'
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsSubmitting(true)
     setStatusMessage(null)
     try {
-      if (email.trim().toLowerCase().endsWith(STAFF_DOMAIN)) {
-        throw new Error('Staff emails should use the staff login page.')
-      }
-
       if (password.length < 6) {
         throw new Error('Password must be at least 6 characters long.')
       }
 
-      const { error } = await signUp(email, password, fullName)
+      const { error } = await signUp(normalizedEmail, password, fullName)
       if (error) {
         throw error
       }
 
-      setStatusMessage('Account created! Please check your email to confirm your account before signing in.')
+      setStatusMessage(
+        isStaffEmail
+          ? 'Staff account created! Please check your email to confirm, then sign in via the Staff Login page.'
+          : 'Request received! Please check your email to confirm your account—our admin team will activate you soon.',
+      )
       setFullName('')
       setEmail('')
       setPassword('')
@@ -64,6 +68,17 @@ export default function SignupPage() {
           </div>
 
           <div className="mt-6 space-y-4">
+            {normalizedEmail && (
+              <div
+                className={`rounded-2xl px-4 py-3 text-xs font-semibold ${
+                  isStaffEmail ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                }`}
+              >
+                {isStaffEmail
+                  ? 'Great! Using a company email means you can log in right after email confirmation.'
+                  : 'Personal email detected. We will review and approve access after you confirm your email.'}
+              </div>
+            )}
             <div>
               <label className="text-xs font-semibold text-text-muted">Full Name</label>
               <input
@@ -99,7 +114,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-2xl bg-brand.violet py-3 text-sm font-semibold text-white shadow-card disabled:opacity-60"
+              className={`w-full rounded-2xl ${buttonColorClass} py-3 text-sm font-semibold text-white shadow-card transition disabled:opacity-60`}
             >
               Request account
             </button>
