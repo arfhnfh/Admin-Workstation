@@ -87,23 +87,81 @@ export async function fetchStaffProfileByAuthId(authUserId: string): Promise<Sta
   return fetchStaffProfile(staffData.id)
 }
 
-export async function saveStaffProfile(profile: StaffProfile, authUserId: string): Promise<{ error?: Error }> {
+export async function fetchAllStaff(): Promise<StaffProfile[]> {
+  if (!supabase) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('staff_view')
+    .select('*')
+    .order('name', { ascending: true })
+
+  if (error || !data) {
+    console.error('Error fetching all staff:', error)
+    return []
+  }
+
+  // Sort by fullName in JavaScript since the view column is "fullName" (quoted identifier)
+  const sorted = (data as StaffProfile[]).sort((a, b) => {
+    const nameA = (a.fullName || a.name || '').toLowerCase()
+    const nameB = (b.fullName || b.name || '').toLowerCase()
+    return nameA.localeCompare(nameB)
+  })
+
+  return sorted
+}
+
+export async function isUserAdmin(authUserId: string): Promise<boolean> {
+  if (!supabase) {
+    return false
+  }
+
+  const { data, error } = await supabase
+    .from('staff')
+    .select('role')
+    .eq('auth_user_id', authUserId)
+    .single()
+
+  if (error || !data) {
+    return false
+  }
+
+  return data.role === 'admin'
+}
+
+export async function saveStaffProfile(profile: StaffProfile, authUserId: string, targetStaffId?: string): Promise<{ error?: Error }> {
   if (!supabase) {
     return { error: new Error('Supabase is not configured') }
   }
 
   try {
-    // Check if staff record exists
-    const { data: existingStaff } = await supabase
-      .from('staff')
-      .select('id')
-      .eq('auth_user_id', authUserId)
-      .single()
-
-    const staffId = existingStaff?.id
+    // Check if current user is admin
+    const isAdmin = await isUserAdmin(authUserId)
+    
+    // Determine which staff record to update
+    let staffId: string | undefined
+    
+    if (targetStaffId && isAdmin) {
+      // Admin is updating another staff member's profile
+      staffId = targetStaffId
+    } else {
+      // User is updating their own profile
+      const { data: existingStaff } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('auth_user_id', authUserId)
+        .single()
+      
+      staffId = existingStaff?.id
+    }
 
     if (!staffId) {
-      // Create new staff record
+      // Create new staff record (only if updating own profile, not when admin updates others)
+      if (targetStaffId && isAdmin) {
+        return { error: new Error('Cannot create staff record for another user. Staff ID must exist.') }
+      }
+      
       const { data: newStaff, error: staffError } = await supabase
         .from('staff')
         .insert({
