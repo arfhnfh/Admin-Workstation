@@ -4,6 +4,8 @@ import { RequireAuth } from '@/components/auth/RequireAuth'
 import LibraryHubPage from '@/modules/library/LibraryHubPage'
 import AddLibraryItemPage from '@/modules/library/AddLibraryItemPage'
 import StaffProfilePage from '@/modules/staff/StaffProfilePage'
+import AdminStaffManagementPage from '@/modules/staff/AdminStaffManagementPage'
+import TravelRequestPage from '@/modules/travel/TravelRequestPage'
 import LoginPage from '@/modules/auth/LoginPage'
 import SignupPage from '@/modules/auth/SignupPage'
 import { staffProfileLoader } from '@/modules/staff/loader'
@@ -51,6 +53,24 @@ export const router = createBrowserRouter([
         path: 'staff/:staffId',
         element: <StaffProfilePage />,
         loader: staffProfileLoader,
+      },
+      {
+        path: 'travel-request',
+        element: <TravelRequestPage />,
+      },
+      {
+        path: 'admin',
+        children: [
+          {
+            path: 'staff',
+            element: <AdminStaffManagementPage />,
+          },
+          {
+            path: 'staff/:staffId',
+            element: <StaffProfilePage />,
+            loader: staffProfileLoader,
+          },
+        ],
       },
     ],
   },
