@@ -4,13 +4,17 @@ import {
   LayoutGrid,
   Settings,
   UserRound,
+  Users,
+  Plane,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const navItems = [
   { label: 'Home', icon: Home, path: '/' },
   { label: 'Modules', icon: LayoutGrid, path: '/modules' },
-  { label: 'Staff System', icon: UserRound, path: '/staff/hamiduddin' },
+  { label: 'Staff System', icon: UserRound, path: '/staff' },
+  { label: 'Travel Request', icon: Plane, path: '/travel-request' },
+  { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
   { label: 'Library', icon: BookOpen, path: '/library' },
   { label: 'Settings', icon: Settings, path: '/settings' },
 ]
@@ -23,7 +27,7 @@ export function Sidebar() {
           <BookOpen className="h-6 w-6" />
         </div>
         <div>
-          <p className="text-sm text-text-muted">Aafiyat Admin</p>
+          <p className="text-sm text-text-muted">Arifah</p>
           <p className="text-lg font-semibold text-charcoal">Workstation</p>
         </div>
       </div>

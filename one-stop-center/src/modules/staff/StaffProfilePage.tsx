@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useNavigation, useLoaderData, useRevalidator } from 'react-router-dom'
+import { useNavigation, useLoaderData, useRevalidator, useParams } from 'react-router-dom'
 import { BadgeCheck, CalendarDays, Mail, Phone, UserRound, Save, Edit2 } from 'lucide-react'
 import type { StaffProfile } from '@/types/staff'
 import { RoleToggle } from '@/components/ui/RoleToggle'
 import { useAuthContext } from '@/hooks/useAuthContext'
-import { fetchStaffProfileByAuthId, saveStaffProfile, createEmptyProfile } from '@/services/staffService'
+import { fetchStaffProfileByAuthId, saveStaffProfile, createEmptyProfile, isUserAdmin } from '@/services/staffService'
 
 const labelClass = 'text-xs uppercase tracking-[0.2em] text-text-muted'
 
@@ -96,28 +96,55 @@ export default function StaffProfilePage() {
   const initialProfile = useLoaderData() as StaffProfile | null
   const navigation = useNavigation()
   const revalidator = useRevalidator()
+  const params = useParams()
   const { user } = useAuthContext()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [profile, setProfile] = useState<StaffProfile | null>(initialProfile)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isEditingOtherStaff, setIsEditingOtherStaff] = useState(false)
 
   const isLoading = navigation.state === 'loading'
+  const targetStaffId = params.staffId || (params as any).staffId
+
+  // Check if user is admin and if editing another staff member
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return
+      const adminStatus = await isUserAdmin(user.id)
+      setIsAdmin(adminStatus)
+      setIsEditingOtherStaff(adminStatus && !!targetStaffId && targetStaffId !== user.id)
+    }
+    checkAdmin()
+  }, [user, targetStaffId])
 
   // Load profile if not in loader data
   useEffect(() => {
     if (!profile && user) {
-      fetchStaffProfileByAuthId(user.id).then((data) => {
-        if (data) {
-          setProfile(data)
-        } else {
-          // Create empty profile for new user
-          setProfile(createEmptyProfile(user.id, user.email))
-          setIsEditing(true)
+      if (targetStaffId && isAdmin) {
+        // Admin viewing another staff member - profile should be loaded by loader
+        // If not loaded, try to fetch by ID
+        if (!initialProfile) {
+          // This will be handled by the loader, but as fallback:
+          fetchStaffProfileByAuthId(user.id).then((data) => {
+            if (data) setProfile(data)
+          })
         }
-      })
+      } else {
+        // User viewing their own profile
+        fetchStaffProfileByAuthId(user.id).then((data) => {
+          if (data) {
+            setProfile(data)
+          } else {
+            // Create empty profile for new user
+            setProfile(createEmptyProfile(user.id, user.email))
+            setIsEditing(true)
+          }
+        })
+      }
     }
-  }, [user, profile])
+  }, [user, profile, targetStaffId, isAdmin, initialProfile])
 
   if (!profile && isLoading) {
     return (
@@ -146,7 +173,9 @@ export default function StaffProfilePage() {
     setIsSaving(true)
     setSaveMessage(null)
 
-    const { error } = await saveStaffProfile(profile, user.id)
+    // If admin is editing another staff member, pass the target staff ID
+    const targetId = isEditingOtherStaff && targetStaffId ? targetStaffId : undefined
+    const { error } = await saveStaffProfile(profile, user.id, targetId)
     
     if (error) {
       setSaveMessage(`Error: ${error.message}`)
@@ -202,13 +231,22 @@ export default function StaffProfilePage() {
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white/80 p-6 shadow-card">
         <div>
           <nav className="text-sm text-text-muted">
-            Home / Admin / Staff / <span className="text-brand.violet">View</span>
+            {isEditingOtherStaff 
+              ? 'Home / Admin / Staff Management / ' 
+              : 'Home / Admin / Staff / '}
+            <span className="text-brand.violet">{isEditing ? 'Edit' : 'View'}</span>
           </nav>
           <h1 className="mt-2 text-3xl font-semibold text-charcoal">
-            {isEditing ? 'Edit Staff Profile' : 'View Staff'}
+            {isEditing 
+              ? (isEditingOtherStaff ? 'Edit Staff Profile' : 'Edit Your Profile')
+              : (isEditingOtherStaff ? 'View Staff Profile' : 'View Staff')}
           </h1>
           <p className="text-sm text-text-muted">
-            {isEditing ? 'Update your profile information' : `Comprehensive profile for ${profile.fullName || 'New User'}`}
+            {isEditing 
+              ? (isEditingOtherStaff 
+                  ? `Update profile information for ${profile.fullName || profile.name || 'this staff member'}`
+                  : 'Update your profile information')
+              : `Comprehensive profile for ${profile.fullName || profile.name || 'New User'}`}
           </p>
         </div>
         <RoleToggle />

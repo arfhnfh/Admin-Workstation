@@ -17,6 +17,7 @@ import {
   Users,
   QrCode,
   Send,
+  Trash2,
 } from 'lucide-react'
 import classNames from 'classnames'
 import type { BookCategory, LibraryBook, LibraryLeaderboardEntry, LibraryChatMessage } from '@/types/library'
@@ -29,6 +30,7 @@ import {
   sendChatMessage,
   scanBookQrCode,
   type ScanResult,
+  deleteBook,
 } from '@/services/libraryService'
 import { isHotBook, useLibraryAdminStore } from '@/store/libraryAdminStore'
 import { leaderboard as mockLeaderboard } from '@/data/mockLibrary'
@@ -329,6 +331,19 @@ function BookCard({
     }
   }
 
+  const handleDeleteBook = async () => {
+    if (!confirm(`Are you sure you want to delete "${book.title}"? This action cannot be undone.`)) {
+      return
+    }
+    try {
+      await deleteBook(book.id)
+      onLoanSaved()
+    } catch (error) {
+      console.error('Failed to delete book:', error)
+      alert('Failed to delete book. Please try again.')
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 rounded-3xl border border-card-border bg-white/90 p-5 shadow-card">
       <div
@@ -342,6 +357,16 @@ function BookCard({
           <span className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-orange-500 shadow-card">
             🔥 Hot
           </span>
+        )}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={handleDeleteBook}
+            className="absolute left-4 top-4 flex items-center justify-center rounded-full bg-red-500 p-2 text-white shadow-lg transition hover:bg-red-600"
+            title="Delete book"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         )}
       </div>
       <div>
@@ -439,7 +464,7 @@ function BookCard({
               <button
                 type="button"
                 onClick={() => setShowQrScanner(false)}
-                className="rounded-full bg-brand.sand/80 px-4 py-2 text-xs font-semibold text-brand.violet"
+                className="rounded-full bg-gray-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-600"
               >
                 Close
               </button>
@@ -490,7 +515,7 @@ function BookCard({
                 <button
                   type="button"
                   onClick={() => setShowQrScanner(false)}
-                  className="mt-3 w-full rounded-2xl border border-card-border bg-white py-2 text-xs font-semibold text-text-muted transition hover:bg-brand.sand/80"
+                  className="mt-3 w-full rounded-2xl bg-gray-400 py-2 text-xs font-semibold text-white transition hover:bg-gray-500"
                 >
                   Cancel
                 </button>
@@ -536,7 +561,7 @@ function BookCard({
             <button
               type="button"
               onClick={() => setShowLog(true)}
-              className="w-full rounded-2xl border border-brand.violet/40 py-2 text-sm font-semibold text-brand.violet"
+              className="w-full rounded-2xl bg-blue-500 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-blue-600"
             >
               View log
             </button>
@@ -555,7 +580,7 @@ function BookCard({
               <button
                 type="button"
                 onClick={() => setShowLog(false)}
-                className="rounded-full bg-brand.sand/80 px-3 py-1 text-xs font-semibold text-brand.violet"
+                className="rounded-full bg-gray-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-gray-600"
               >
                 Close
               </button>
@@ -720,8 +745,8 @@ function ChatPanel({
               className={classNames(
                 'max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-card selection:bg-brand.violet/30 selection:text-charcoal',
                 isStaff
-                  ? 'ml-auto bg-brand.grape text-white'
-                  : 'bg-[#fff1e2] text-charcoal',
+                  ? 'ml-auto bg-brand.violet/10 border border-brand.violet/40 text-charcoal'
+                  : 'bg-white border border-gray-200 text-charcoal',
               )}
             >
               {msg.message}
@@ -741,7 +766,7 @@ function ChatPanel({
         <button
           type="button"
           onClick={handleSend}
-          className="flex items-center gap-2 rounded-2xl bg-brand.violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand.violet/90"
+          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
         >
           <Send className="h-4 w-4" />
           Send
@@ -880,7 +905,7 @@ export default function LibraryHubPage() {
           {role === 'admin' && (
             <Link
               to="/library/manage"
-              className="flex items-center gap-2 rounded-3xl bg-white px-4 py-3 text-sm font-semibold text-brand.violet shadow-card"
+              className="flex items-center gap-2 rounded-3xl bg-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-purple-600"
             >
               <Plus className="h-4 w-4" />
               Add category / book
@@ -907,7 +932,7 @@ export default function LibraryHubPage() {
                 <p className="text-sm text-text-muted">Popular</p>
                 <h2 className="text-2xl font-semibold">Trending among staff</h2>
               </div>
-              <button className="text-sm font-semibold text-brand.violet">View all</button>
+              <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View all</button>
             </div>
             <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-2">
               {filteredBooks.map((book) => (
