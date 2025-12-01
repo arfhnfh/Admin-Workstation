@@ -141,6 +141,7 @@ export default function TravelRequestPage() {
   const [startDateTime, setStartDateTime] = useState('')
   const [endDateTime, setEndDateTime] = useState('')
   const [transportationType, setTransportationType] = useState('')
+  const [returnTransportationType, setReturnTransportationType] = useState('')
   const [showAccommodation, setShowAccommodation] = useState(true)
   const [accommodations, setAccommodations] = useState<Accommodation[]>([
     { hotelName: '', hotelLocation: '', membersList: '', hotelRate: '', checkIn: '', checkOut: '', remarkLink: '' }
@@ -1339,6 +1340,43 @@ export default function TravelRequestPage() {
                 )}
               </div>
             </div>
+            {/* Return Trip Section (shown for Round-Trip only) */}
+            {travelTypeRadio === 'round-trip' && (
+              <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-charcoal">
+                    Return Trip <span className="text-red-500">*</span>
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 text-sm font-semibold text-charcoal">
+                      Transportation Type <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {['FLIGHT', 'COMPANY CAR', 'BUS', 'FERRY', 'TRAIN', 'OTHER'].map((type) => (
+                        <label
+                          key={type}
+                          className="flex items-center gap-2 rounded-xl border border-card-border bg-white p-3 cursor-pointer hover:bg-brand.sand/30"
+                        >
+                          <input
+                            type="radio"
+                            name="returnTransportationType"
+                            value={type}
+                            checked={returnTransportationType === type}
+                            onChange={(e) => setReturnTransportationType(e.target.value)}
+                            className="h-4 w-4 text-brand.violet focus:ring-brand.violet"
+                            required
+                          />
+                          <span className="text-sm text-charcoal">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column */}
