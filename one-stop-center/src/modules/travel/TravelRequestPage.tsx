@@ -165,6 +165,22 @@ export default function TravelRequestPage() {
   const [trains, setTrains] = useState<TrainInfo[]>([{
     date: '', trainCompany: '', fromTerminal: '', toTerminal: '', estimatedFare: '', ticketNo: '', remarkLink: ''
   }])
+  const [returnFlights, setReturnFlights] = useState<FlightInfo[]>([{
+    date: '', flightCompany: '', fromAirport: '', toAirport: '', estimatedAirfare: '', flightNo: '', remarkLink: ''
+  }])
+  const [returnLuggageNo, setReturnLuggageNo] = useState('')
+  const [returnLuggageWeight, setReturnLuggageWeight] = useState('')
+  const [returnPickupLocation, setReturnPickupLocation] = useState('')
+  const [returnPickupDateTime, setReturnPickupDateTime] = useState('')
+  const [returnBuses, setReturnBuses] = useState<BusInfo[]>([{
+    date: '', busCompany: '', fromTerminal: '', toTerminal: '', estimatedFare: '', ticketNo: '', remarkLink: ''
+  }])
+  const [returnFerries, setReturnFerries] = useState<FerryInfo[]>([{
+    date: '', ferryCompany: '', fromTerminal: '', toTerminal: '', estimatedFare: '', ticketNo: '', remarkLink: ''
+  }])
+  const [returnTrains, setReturnTrains] = useState<TrainInfo[]>([{
+    date: '', trainCompany: '', fromTerminal: '', toTerminal: '', estimatedFare: '', ticketNo: '', remarkLink: ''
+  }])
   const [mealDays, setMealDays] = useState<
     Array<{
       date: string
@@ -288,6 +304,79 @@ export default function TravelRequestPage() {
 
   const updateTrain = (index: number, field: keyof TrainInfo, value: string) => {
     setTrains(prev => prev.map((train, i) => 
+      i === index ? { ...train, [field]: value } : train
+    ))
+  }
+
+  // Return trip helpers
+  const addReturnFlight = () => {
+    setReturnFlights(prev => [...prev, {
+      date: '', flightCompany: '', fromAirport: '', toAirport: '', estimatedAirfare: '', flightNo: '', remarkLink: ''
+    }])
+  }
+
+  const removeReturnFlight = (index: number) => {
+    if (returnFlights.length > 1) {
+      setReturnFlights(prev => prev.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateReturnFlight = (index: number, field: keyof FlightInfo, value: string) => {
+    setReturnFlights(prev => prev.map((flight, i) =>
+      i === index ? { ...flight, [field]: value } : flight
+    ))
+  }
+
+  const addReturnBus = () => {
+    setReturnBuses(prev => [...prev, {
+      date: '', busCompany: '', fromTerminal: '', toTerminal: '', estimatedFare: '', ticketNo: '', remarkLink: ''
+    }])
+  }
+
+  const removeReturnBus = (index: number) => {
+    if (returnBuses.length > 1) {
+      setReturnBuses(prev => prev.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateReturnBus = (index: number, field: keyof BusInfo, value: string) => {
+    setReturnBuses(prev => prev.map((bus, i) =>
+      i === index ? { ...bus, [field]: value } : bus
+    ))
+  }
+
+  const addReturnFerry = () => {
+    setReturnFerries(prev => [...prev, {
+      date: '', ferryCompany: '', fromTerminal: '', toTerminal: '', estimatedFare: '', ticketNo: '', remarkLink: ''
+    }])
+  }
+
+  const removeReturnFerry = (index: number) => {
+    if (returnFerries.length > 1) {
+      setReturnFerries(prev => prev.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateReturnFerry = (index: number, field: keyof FerryInfo, value: string) => {
+    setReturnFerries(prev => prev.map((ferry, i) =>
+      i === index ? { ...ferry, [field]: value } : ferry
+    ))
+  }
+
+  const addReturnTrain = () => {
+    setReturnTrains(prev => [...prev, {
+      date: '', trainCompany: '', fromTerminal: '', toTerminal: '', estimatedFare: '', ticketNo: '', remarkLink: ''
+    }])
+  }
+
+  const removeReturnTrain = (index: number) => {
+    if (returnTrains.length > 1) {
+      setReturnTrains(prev => prev.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateReturnTrain = (index: number, field: keyof TrainInfo, value: string) => {
+    setReturnTrains(prev => prev.map((train, i) =>
       i === index ? { ...train, [field]: value } : train
     ))
   }
@@ -1205,139 +1294,6 @@ export default function TravelRequestPage() {
                   </div>
                 )}
 
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowAccommodation(!showAccommodation)}
-                    className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
-                  >
-                    {showAccommodation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    {showAccommodation ? '- Hide Accommodation' : '+ Show Accommodation'}
-                  </button>
-                </div>
-
-                {showAccommodation && (
-                  <div className="space-y-4 rounded-xl border border-card-border bg-brand.sand/30 p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-charcoal">Accommodation Info</h3>
-                      <button
-                        type="button"
-                        onClick={addAccommodation}
-                        className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
-                      >
-                        + Add More
-                      </button>
-                    </div>
-
-                    {accommodations.map((acc, index) => (
-                      <div key={index} className="space-y-3 rounded-xl border border-card-border bg-white p-4">
-                        {accommodations.length > 1 && (
-                          <div className="flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => removeAccommodation(index)}
-                              className="text-sm text-red-500 hover:text-red-700"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
-                              <Hotel className="h-3 w-3" />
-                              Hotel Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={acc.hotelName}
-                              onChange={(e) => updateAccommodation(index, 'hotelName', e.target.value)}
-                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
-                              <MapPin className="h-3 w-3" />
-                              Hotel Location <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={acc.hotelLocation}
-                              onChange={(e) => updateAccommodation(index, 'hotelLocation', e.target.value)}
-                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
-                              <Users className="h-3 w-3" />
-                              Members List <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={acc.membersList}
-                              onChange={(e) => updateAccommodation(index, 'membersList', e.target.value)}
-                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
-                              Hotel Rate <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={acc.hotelRate}
-                              onChange={(e) => updateAccommodation(index, 'hotelRate', e.target.value)}
-                              placeholder="RM"
-                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
-                              <Calendar className="h-3 w-3" />
-                              Check In <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={acc.checkIn}
-                              onChange={(e) => updateAccommodation(index, 'checkIn', e.target.value)}
-                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
-                              <Calendar className="h-3 w-3" />
-                              Check Out <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={acc.checkOut}
-                              onChange={(e) => updateAccommodation(index, 'checkOut', e.target.value)}
-                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
-                            <Link2 className="h-3 w-3" />
-                            Remark/Link
-                          </label>
-                          <input
-                            type="text"
-                            value={acc.remarkLink}
-                            onChange={(e) => updateAccommodation(index, 'remarkLink', e.target.value)}
-                            className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
             {/* Return Trip Section (shown for Round-Trip only) */}
@@ -1374,9 +1330,742 @@ export default function TravelRequestPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* FLIGHT Info (Return) */}
+                  {returnTransportationType === 'FLIGHT' && (
+                    <div className="space-y-4 rounded-xl border border-card-border bg-brand.sand/30 p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-charcoal">Flight Info (Return)</h3>
+                        <button
+                          type="button"
+                          onClick={addReturnFlight}
+                          className="flex items-center gap-2 rounded-xl bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-100"
+                        >
+                          + Flight
+                        </button>
+                      </div>
+                      {returnFlights.map((flight, index) => (
+                        <div key={index} className="space-y-3 rounded-xl border border-card-border bg-white p-4">
+                          {returnFlights.length > 1 && (
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => removeReturnFlight(index)}
+                                className="text-sm text-red-500 hover:text-red-700"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <Calendar className="h-3 w-3" />
+                                Date <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={flight.date}
+                                onChange={(e) => updateReturnFlight(index, 'date', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <Building2 className="h-3 w-3" />
+                                Flight Company <span className="text-red-500">*</span>
+                              </label>
+                              <select
+                                required
+                                value={flight.flightCompany}
+                                onChange={(e) => updateReturnFlight(index, 'flightCompany', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              >
+                                <option value="">-- Flight Company --</option>
+                                <option value="MALAYSIA AIRLINES">Malaysia Airlines</option>
+                                <option value="AIRASIA">AirAsia</option>
+                                <option value="FIREFLY">Firefly</option>
+                                <option value="MASWINGS">MASwings</option>
+                                <option value="OTHER">Other</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                From Airport <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={flight.fromAirport}
+                                onChange={(e) => updateReturnFlight(index, 'fromAirport', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                To Airport <span className="text-red-500">*</span>
+                              </label>
+                              <select
+                                required
+                                value={flight.toAirport}
+                                onChange={(e) => updateReturnFlight(index, 'toAirport', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              >
+                                <option value="">-- Airport --</option>
+                                <option value="KUL">Kuala Lumpur (KUL)</option>
+                                <option value="PEN">Penang (PEN)</option>
+                                <option value="LGK">Langkawi (LGK)</option>
+                                <option value="KBR">Kota Bharu (KBR)</option>
+                                <option value="OTHER">Other</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                Estimated Airfare <span className="text-red-500">*</span>
+                              </label>
+                              <div className="flex">
+                                <span className="flex items-center rounded-l-lg border border-r-0 border-card-border bg-gray-50 px-3 text-sm text-text-muted">
+                                  RM
+                                </span>
+                                <input
+                                  type="text"
+                                  required
+                                  value={flight.estimatedAirfare}
+                                  onChange={(e) => updateReturnFlight(index, 'estimatedAirfare', e.target.value)}
+                                  className="w-full rounded-r-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <FileText className="h-3 w-3" />
+                                Flight No
+                              </label>
+                              <input
+                                type="text"
+                                value={flight.flightNo}
+                                onChange={(e) => updateReturnFlight(index, 'flightNo', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                              <Link2 className="h-3 w-3" />
+                              Remark/Link
+                            </label>
+                            <input
+                              type="text"
+                              value={flight.remarkLink}
+                              onChange={(e) => updateReturnFlight(index, 'remarkLink', e.target.value)}
+                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <div className="space-y-3 rounded-xl border border-card-border bg-white p-4">
+                        <h4 className="text-sm font-semibold text-charcoal">Luggage Info (Return)</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                              <FileText className="h-3 w-3" />
+                              Luggage No (Total)
+                            </label>
+                            <input
+                              type="text"
+                              value={returnLuggageNo}
+                              onChange={(e) => setReturnLuggageNo(e.target.value)}
+                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                              <Luggage className="h-3 w-3" />
+                              Luggage Weight
+                            </label>
+                            <input
+                              type="text"
+                              value={returnLuggageWeight}
+                              onChange={(e) => setReturnLuggageWeight(e.target.value)}
+                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* COMPANY CAR Info (Return) */}
+                  {returnTransportationType === 'COMPANY CAR' && (
+                    <div className="space-y-4 rounded-xl border border-card-border bg-brand.sand/30 p-4">
+                      <h3 className="text-lg font-semibold text-charcoal">Pickup Info (Return)</h3>
+                      <div className="space-y-3 rounded-xl border border-card-border bg-white p-4">
+                        <div>
+                          <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                            <PlaneIcon className="h-3 w-3" />
+                            Pickup Location/Address
+                          </label>
+                          <input
+                            type="text"
+                            value={returnPickupLocation}
+                            onChange={(e) => setReturnPickupLocation(e.target.value)}
+                            placeholder="MERGONG"
+                            className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                            <Calendar className="h-3 w-3" />
+                            Pickup Date Time
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={returnPickupDateTime}
+                            onChange={(e) => setReturnPickupDateTime(e.target.value)}
+                            className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="rounded-xl bg-blue-50 border border-blue-200 p-3">
+                        <p className="text-xs text-blue-800">
+                          Please submit request vehicle form after submit this travel requisition.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BUS Info (Return) */}
+                  {returnTransportationType === 'BUS' && (
+                    <div className="space-y-4 rounded-xl border border-card-border bg-brand.sand/30 p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-charcoal">Bus Info (Return)</h3>
+                        <button
+                          type="button"
+                          onClick={addReturnBus}
+                          className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                        >
+                          + Station
+                        </button>
+                      </div>
+                      {returnBuses.map((bus, index) => (
+                        <div key={index} className="space-y-3 rounded-xl border border-card-border bg-white p-4">
+                          {returnBuses.length > 1 && (
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => removeReturnBus(index)}
+                                className="text-sm text-red-500 hover:text-red-700"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <Calendar className="h-3 w-3" />
+                                Date <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={bus.date}
+                                onChange={(e) => updateReturnBus(index, 'date', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <FileText className="h-3 w-3" />
+                                Bus Company <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={bus.busCompany}
+                                onChange={(e) => updateReturnBus(index, 'busCompany', e.target.value)}
+                                placeholder="Enter Bus Company"
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                              <p className="mt-1 text-xs text-text-muted">
+                                e.g., Sani Express, Shahana Express, Mutiara Express
+                              </p>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                From Terminal <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={bus.fromTerminal}
+                                onChange={(e) => updateReturnBus(index, 'fromTerminal', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                To Terminal <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={bus.toTerminal}
+                                onChange={(e) => updateReturnBus(index, 'toTerminal', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                Estimated Fare <span className="text-red-500">*</span>
+                              </label>
+                              <div className="flex">
+                                <span className="flex items-center rounded-l-lg border border-r-0 border-card-border bg-gray-50 px-3 text-sm text-text-muted">
+                                  RM
+                                </span>
+                                <input
+                                  type="text"
+                                  required
+                                  value={bus.estimatedFare}
+                                  onChange={(e) => updateReturnBus(index, 'estimatedFare', e.target.value)}
+                                  className="w-full rounded-r-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <FileText className="h-3 w-3" />
+                                Ticket No.
+                              </label>
+                              <input
+                                type="text"
+                                value={bus.ticketNo}
+                                onChange={(e) => updateReturnBus(index, 'ticketNo', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                              <Link2 className="h-3 w-3" />
+                              Remark/Link
+                            </label>
+                            <input
+                              type="text"
+                              value={bus.remarkLink}
+                              onChange={(e) => updateReturnBus(index, 'remarkLink', e.target.value)}
+                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* FERRY Info (Return) */}
+                  {returnTransportationType === 'FERRY' && (
+                    <div className="space-y-4 rounded-xl border border-card-border bg-brand.sand/30 p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-charcoal">Ferry Info (Return)</h3>
+                        <button
+                          type="button"
+                          onClick={addReturnFerry}
+                          className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                        >
+                          + Station
+                        </button>
+                      </div>
+                      {returnFerries.map((ferry, index) => (
+                        <div key={index} className="space-y-3 rounded-xl border border-card-border bg-white p-4">
+                          {returnFerries.length > 1 && (
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => removeReturnFerry(index)}
+                                className="text-sm text-red-500 hover:text-red-700"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <Calendar className="h-3 w-3" />
+                                Date <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={ferry.date}
+                                onChange={(e) => updateReturnFerry(index, 'date', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <FileText className="h-3 w-3" />
+                                Ferry Company <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={ferry.ferryCompany}
+                                onChange={(e) => updateReturnFerry(index, 'ferryCompany', e.target.value)}
+                                placeholder="Enter Ferry Company"
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                              <p className="mt-1 text-xs text-text-muted">
+                                e.g., Sani Ferry, Langkawi Ferry Line Ventures
+                              </p>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                From Terminal <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={ferry.fromTerminal}
+                                onChange={(e) => updateReturnFerry(index, 'fromTerminal', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                To Terminal <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={ferry.toTerminal}
+                                onChange={(e) => updateReturnFerry(index, 'toTerminal', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                Estimated Fare <span className="text-red-500">*</span>
+                              </label>
+                              <div className="flex">
+                                <span className="flex items-center rounded-l-lg border border-r-0 border-card-border bg-gray-50 px-3 text-sm text-text-muted">
+                                  RM
+                                </span>
+                                <input
+                                  type="text"
+                                  required
+                                  value={ferry.estimatedFare}
+                                  onChange={(e) => updateReturnFerry(index, 'estimatedFare', e.target.value)}
+                                  className="w-full rounded-r-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <FileText className="h-3 w-3" />
+                                Ticket No.
+                              </label>
+                              <input
+                                type="text"
+                                value={ferry.ticketNo}
+                                onChange={(e) => updateReturnFerry(index, 'ticketNo', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                              <Link2 className="h-3 w-3" />
+                              Remark/Link
+                            </label>
+                            <input
+                              type="text"
+                              value={ferry.remarkLink}
+                              onChange={(e) => updateReturnFerry(index, 'remarkLink', e.target.value)}
+                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* TRAIN Info (Return) */}
+                  {returnTransportationType === 'TRAIN' && (
+                    <div className="space-y-4 rounded-xl border border-card-border bg-brand.sand/30 p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-charcoal">Train Info (Return)</h3>
+                        <button
+                          type="button"
+                          onClick={addReturnTrain}
+                          className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                        >
+                          + Station
+                        </button>
+                      </div>
+                      {returnTrains.map((train, index) => (
+                        <div key={index} className="space-y-3 rounded-xl border border-card-border bg-white p-4">
+                          {returnTrains.length > 1 && (
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => removeReturnTrain(index)}
+                                className="text-sm text-red-500 hover:text-red-700"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <Calendar className="h-3 w-3" />
+                                Date <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={train.date}
+                                onChange={(e) => updateReturnTrain(index, 'date', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <FileText className="h-3 w-3" />
+                                Train Company <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={train.trainCompany}
+                                onChange={(e) => updateReturnTrain(index, 'trainCompany', e.target.value)}
+                                placeholder="e.g., Komuter or ETS"
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                From Terminal <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={train.fromTerminal}
+                                onChange={(e) => updateReturnTrain(index, 'fromTerminal', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <MapPin className="h-3 w-3" />
+                                To Terminal <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={train.toTerminal}
+                                onChange={(e) => updateReturnTrain(index, 'toTerminal', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                Estimated Fare <span className="text-red-500">*</span>
+                              </label>
+                              <div className="flex">
+                                <span className="flex items-center rounded-l-lg border border-r-0 border-card-border bg-gray-50 px-3 text-sm text-text-muted">
+                                  RM
+                                </span>
+                                <input
+                                  type="text"
+                                  required
+                                  value={train.estimatedFare}
+                                  onChange={(e) => updateReturnTrain(index, 'estimatedFare', e.target.value)}
+                                  className="w-full rounded-r-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                                <FileText className="h-3 w-3" />
+                                Ticket No.
+                              </label>
+                              <input
+                                type="text"
+                                value={train.ticketNo}
+                                onChange={(e) => updateReturnTrain(index, 'ticketNo', e.target.value)}
+                                className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                              <Link2 className="h-3 w-3" />
+                              Remark/Link
+                            </label>
+                            <input
+                              type="text"
+                              value={train.remarkLink}
+                              onChange={(e) => updateReturnTrain(index, 'remarkLink', e.target.value)}
+                              className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
+
+            {/* Accommodation Section (shared for trip) */}
+            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-charcoal">Accommodation Info</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowAccommodation(!showAccommodation)}
+                  className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                >
+                  {showAccommodation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {showAccommodation ? 'Hide Accommodation' : 'Add Accommodation'}
+                </button>
+              </div>
+              <div
+                className={`space-y-4 rounded-xl border border-card-border bg-brand.sand/30 p-4 ${
+                  showAccommodation ? '' : 'hidden'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-text-muted">
+                    Use this section to record hotel details for this trip (both going and return).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={addAccommodation}
+                    className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                  >
+                    + Add More
+                  </button>
+                </div>
+                {accommodations.map((acc, index) => (
+                  <div key={index} className="space-y-3 rounded-xl border border-card-border bg-white p-4">
+                    {accommodations.length > 1 && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => removeAccommodation(index)}
+                          className="text-sm text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                          <Hotel className="h-3 w-3" />
+                          Hotel Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={acc.hotelName}
+                          onChange={(e) => updateAccommodation(index, 'hotelName', e.target.value)}
+                          className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                          <MapPin className="h-3 w-3" />
+                          Hotel Location <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={acc.hotelLocation}
+                          onChange={(e) => updateAccommodation(index, 'hotelLocation', e.target.value)}
+                          className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                          <Users className="h-3 w-3" />
+                          Members List <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={acc.membersList}
+                          onChange={(e) => updateAccommodation(index, 'membersList', e.target.value)}
+                          className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                          Hotel Rate <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={acc.hotelRate}
+                          onChange={(e) => updateAccommodation(index, 'hotelRate', e.target.value)}
+                          placeholder="RM"
+                          className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                          <Calendar className="h-3 w-3" />
+                          Check In <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={acc.checkIn}
+                          onChange={(e) => updateAccommodation(index, 'checkIn', e.target.value)}
+                          className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                          <Calendar className="h-3 w-3" />
+                          Check Out <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={acc.checkOut}
+                          onChange={(e) => updateAccommodation(index, 'checkOut', e.target.value)}
+                          className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 flex items-center gap-2 text-xs font-semibold text-charcoal">
+                        <Link2 className="h-3 w-3" />
+                        Remark/Link
+                      </label>
+                      <input
+                        type="text"
+                        value={acc.remarkLink}
+                        onChange={(e) => updateAccommodation(index, 'remarkLink', e.target.value)}
+                        className="w-full rounded-lg border border-card-border bg-white px-3 py-2 text-sm focus:border-brand.violet focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Right Column */}
