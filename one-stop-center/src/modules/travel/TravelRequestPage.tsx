@@ -18,6 +18,7 @@ import {
 import { parse, parseISO, isValid as isValidDate } from 'date-fns'
 import { useAuthContext } from '@/hooks/useAuthContext'
 import { fetchStaffProfileByAuthId } from '@/services/staffService'
+import { createTravelRequest } from '@/services/travelService'
 import type { StaffProfile } from '@/types/staff'
 
 interface Accommodation {
@@ -385,33 +386,30 @@ export default function TravelRequestPage() {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // TODO: Submit to backend
-    console.log('Travel Request Data:', {
+    if (!staffProfile?.id) {
+      alert('Unable to submit: staff profile not loaded.')
+      setIsSubmitting(false)
+      return
+    }
+
+    const { error } = await createTravelRequest({
+      staffId: staffProfile.id,
       destination,
       reason,
-      travelType,
-      travelTypeRadio,
-      attachments,
       startDateTime,
       endDateTime,
-      transportationType,
-      accommodations,
-      flights,
-      buses,
-      ferries,
-      trains,
-      luggageNo,
-      luggageWeight,
-      pickupLocation,
-      pickupDateTime,
-      mealDays,
+      totalMealAllowance,
     })
 
-    // Simulate API call
-    setTimeout(() => {
-      alert('Travel request submitted successfully! It will be sent to HOD for further action.')
+    if (error) {
+      console.error('Failed to submit travel request:', error)
+      alert('Failed to submit travel request. Please try again.')
       setIsSubmitting(false)
-    }, 1000)
+      return
+    }
+
+    alert('Travel request submitted successfully! It will be sent to HOD for further action.')
+    setIsSubmitting(false)
   }
 
   useEffect(() => {
@@ -497,19 +495,9 @@ export default function TravelRequestPage() {
             Home / <span className="text-brand.violet">Travel Request</span>
           </nav>
           <h1 className="mt-2 text-3xl font-semibold text-charcoal">Travel Request</h1>
-          <p className="text-sm text-text-muted">
-            Submit your travel request for approval
-          </p>
+          <p className="text-sm text-text-muted">Submit your travel request for approval.</p>
         </div>
       </div>
-
-      {/* Warning Banner */}
-      <div className="rounded-2xl bg-orange-50 border border-orange-200 px-6 py-4">
-        <p className="text-sm font-semibold text-orange-800">
-          Please submit travel requests at least 2 weeks in advance.
-        </p>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Left Column */}
@@ -600,6 +588,35 @@ export default function TravelRequestPage() {
                     className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
                     placeholder="Enter reason"
                   />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-charcoal">
+                      <Calendar className="h-4 w-4" />
+                      Start Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={startDateTime}
+                      onChange={(e) => setStartDateTime(e.target.value)}
+                      className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-charcoal">
+                      <Calendar className="h-4 w-4" />
+                      End Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={endDateTime}
+                      onChange={(e) => setEndDateTime(e.target.value)}
+                      className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -2068,47 +2085,22 @@ export default function TravelRequestPage() {
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Date Travel & Meal Info */}
-            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
-              <h2 className="mb-4 text-xl font-semibold text-charcoal">Date Travel & Meal Info</h2>
+            {/* Step 4 - Meal Allowance Summary Only */}
+            <p className={`pt-2 text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 4 ? '' : 'hidden'}`}>
+              Step 4 · Dates & Allowance
+            </p>
+
+            <div
+              className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
+                currentStep === 4 ? '' : 'hidden'
+              }`}
+            >
+              <h2 className="mb-1 text-xl font-semibold text-charcoal">Meal Allowance Summary</h2>
+              <p className="mb-4 text-xs text-text-muted">
+                Based on your travel dates, review which meals are eligible and mark those provided for free.
+              </p>
               
               <div className="space-y-4">
-                <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
-                  <p className="text-xs text-blue-800">
-                    Allowance is provided only for travel distances exceeding 100 km.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-charcoal">
-                    <Calendar className="h-4 w-4" />
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={startDateTime}
-                    onChange={(e) => setStartDateTime(e.target.value)}
-                    className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-charcoal">
-                    <Calendar className="h-4 w-4" />
-                    End Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={endDateTime}
-                    onChange={(e) => setEndDateTime(e.target.value)}
-                    className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
-                  />
-                </div>
-
                 <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 space-y-2">
                   <p className="text-xs text-blue-800">
                     Allowances are provided for breakfast at 9:00 am, lunch from 12:00 pm to 2:00 pm, and dinner after 7:30 pm.

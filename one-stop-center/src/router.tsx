@@ -6,6 +6,7 @@ import AddLibraryItemPage from '@/modules/library/AddLibraryItemPage'
 import StaffProfilePage from '@/modules/staff/StaffProfilePage'
 import AdminStaffManagementPage from '@/modules/staff/AdminStaffManagementPage'
 import TravelRequestPage from '@/modules/travel/TravelRequestPage'
+import AdminTravelRequestsPage from '@/modules/travel/AdminTravelRequestsPage'
 import LoginPage from '@/modules/auth/LoginPage'
 import SignupPage from '@/modules/auth/SignupPage'
 import { staffProfileLoader } from '@/modules/staff/loader'
@@ -64,6 +65,10 @@ export const router = createBrowserRouter([
           {
             path: 'staff',
             element: <AdminStaffManagementPage />,
+          },
+          {
+            path: 'travel-requests',
+            element: <AdminTravelRequestsPage />,
           },
           {
             path: 'staff/:staffId',
