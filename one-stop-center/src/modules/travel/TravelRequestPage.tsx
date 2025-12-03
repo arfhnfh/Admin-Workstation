@@ -14,6 +14,11 @@ import {
   FileText,
   Luggage,
   Plane as PlaneIcon,
+  UserRound,
+  Mail,
+  Phone,
+  Hash,
+  CreditCard,
 } from 'lucide-react'
 import { parse, parseISO, isValid as isValidDate } from 'date-fns'
 import { useAuthContext } from '@/hooks/useAuthContext'
@@ -143,6 +148,7 @@ export default function TravelRequestPage() {
   const [transportationType, setTransportationType] = useState('')
   const [returnTransportationType, setReturnTransportationType] = useState('')
   const [showAccommodation, setShowAccommodation] = useState(true)
+  const [showStaffDetails, setShowStaffDetails] = useState(false)
   const [accommodations, setAccommodations] = useState<Accommodation[]>([
     { hotelName: '', hotelLocation: '', membersList: '', hotelRate: '', checkIn: '', checkOut: '', remarkLink: '' }
   ])
@@ -188,6 +194,30 @@ export default function TravelRequestPage() {
       provided: { breakfast: boolean; lunch: boolean; dinner: boolean }
     }>
   >([])
+  const [currentStep, setCurrentStep] = useState<number>(1)
+
+  const steps = [
+    {
+      id: 1,
+      title: 'Travel Details',
+      description: 'Destination, reason, purpose & attachments',
+    },
+    {
+      id: 2,
+      title: 'Trip Segments',
+      description: 'Going trip and (if needed) return trip transportation',
+    },
+    {
+      id: 3,
+      title: 'Accommodation',
+      description: 'Hotel details, members, and stay dates',
+    },
+    {
+      id: 4,
+      title: 'Dates & Allowance',
+      description: 'Overall travel dates and meal allowance info',
+    },
+  ]
 
   useEffect(() => {
     const loadStaffProfile = async () => {
@@ -490,86 +520,63 @@ export default function TravelRequestPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white/80 p-6 shadow-card">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/80 px-4 py-3 shadow-card">
         <div>
           <nav className="text-sm text-text-muted">
             Home / <span className="text-brand.violet">Travel Request</span>
           </nav>
-          <h1 className="mt-2 text-3xl font-semibold text-charcoal">Travel Request</h1>
-          <p className="text-sm text-text-muted">
-            Submit your travel request for approval
-          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-charcoal">Travel Request</h1>
+          <p className="mt-1 text-xs text-text-muted">Submit your travel request for approval.</p>
         </div>
       </div>
 
-      {/* Warning Banner */}
-      <div className="rounded-2xl bg-orange-50 border border-orange-200 px-6 py-4">
-        <p className="text-sm font-semibold text-orange-800">
-          Please submit travel requests at least 2 weeks in advance.
+      {/* Step Indicator */}
+      <div className="rounded-2xl border border-card-border bg-white/80 px-3 py-3 shadow-card">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+          Travel Request Steps
         </p>
+        <div className="grid gap-4 md:grid-cols-4">
+          {steps.map((step) => {
+            const isActive = currentStep === step.id
+            return (
+            <div
+              key={step.id}
+              className={`flex items-start gap-3 rounded-2xl p-2 ${
+                isActive ? 'bg-brand.violet/5' : 'bg-transparent'
+              }`}
+            >
+              <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                isActive ? 'bg-brand.violet text-white' : 'bg-brand.violet/10 text-brand.violet'
+              }`}>
+                {step.id}
+              </div>
+              <div>
+                <p className={`text-sm font-semibold ${isActive ? 'text-charcoal' : 'text-text-muted'}`}>
+                  {step.title}
+                </p>
+                <p className="text-xs text-text-muted">{step.description}</p>
+              </div>
+            </div>
+          )})}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Left Column */}
           <div className="space-y-6">
-            {/* Staff Info */}
-            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
-              <h2 className="mb-4 text-xl font-semibold text-charcoal">Staff Info</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Full Name</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">
-                    {staffProfile?.fullName || staffProfile?.name || '-'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">NRIC</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.icNo || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Email</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.email || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Mobile No.</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.phone || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Employee No.</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.employeeNo || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Job Grade</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.jobGrade || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Position</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.position || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Department</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.department || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Passport No.</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.passport.passportNo || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Expiry Date</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">
-                    {staffProfile?.passport.expiryDate 
-                      ? new Date(staffProfile.passport.expiryDate).toLocaleDateString()
-                      : '-'
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
+            {/* Step 1 Label */}
+            <p className={`text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 1 ? '' : 'hidden'}`}>
+              Step 1 · Travel Details
+            </p>
 
             {/* Travel Info */}
-            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
+            <div
+              className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
+                currentStep === 1 ? '' : 'hidden'
+              }`}
+            >
               <h2 className="mb-4 text-xl font-semibold text-charcoal">Travel Info</h2>
               
               <div className="space-y-4">
@@ -652,40 +659,62 @@ export default function TravelRequestPage() {
                   </div>
                 </div>
 
+              </div>
+            </div>
+
+            {/* Step 2 Label */}
+            <p className={`pt-2 text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 2 ? '' : 'hidden'}`}>
+              Step 2 · Trip Segments
+            </p>
+
+            {/* Travel Type & Trip Sections */}
+            <div
+              className={`mb-4 rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
+                currentStep === 2 ? '' : 'hidden'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <label className="mb-2 text-sm font-semibold text-charcoal">
+                  <h2 className="text-lg font-semibold text-charcoal">
                     Travel Type <span className="text-red-500">*</span>
+                  </h2>
+                  <p className="mt-1 text-xs text-text-muted">
+                    Choose whether this request is one-way or includes a return trip.
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="travelTypeRadio"
+                      value="one-way"
+                      checked={travelTypeRadio === 'one-way'}
+                      onChange={(e) => setTravelTypeRadio(e.target.value as 'one-way' | 'round-trip')}
+                      className="h-4 w-4 text-brand.violet focus:ring-brand.violet"
+                    />
+                    <span className="text-sm text-charcoal">One-Way</span>
                   </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="travelTypeRadio"
-                        value="one-way"
-                        checked={travelTypeRadio === 'one-way'}
-                        onChange={(e) => setTravelTypeRadio(e.target.value as 'one-way' | 'round-trip')}
-                        className="h-4 w-4 text-brand.violet focus:ring-brand.violet"
-                      />
-                      <span className="text-sm text-charcoal">One-Way</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="travelTypeRadio"
-                        value="round-trip"
-                        checked={travelTypeRadio === 'round-trip'}
-                        onChange={(e) => setTravelTypeRadio(e.target.value as 'one-way' | 'round-trip')}
-                        className="h-4 w-4 text-brand.violet focus:ring-brand.violet"
-                      />
-                      <span className="text-sm text-charcoal">Round-Trip</span>
-                    </label>
-                  </div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="travelTypeRadio"
+                      value="round-trip"
+                      checked={travelTypeRadio === 'round-trip'}
+                      onChange={(e) => setTravelTypeRadio(e.target.value as 'one-way' | 'round-trip')}
+                      className="h-4 w-4 text-brand.violet focus:ring-brand.violet"
+                    />
+                    <span className="text-sm text-charcoal">Round-Trip</span>
+                  </label>
                 </div>
               </div>
             </div>
 
             {/* Going Trip Section */}
-            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
+            <div
+              className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
+                currentStep === 2 ? '' : 'hidden'
+              }`}
+            >
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-charcoal">Going Trip <span className="text-red-500">*</span></h2>
               </div>
@@ -1927,8 +1956,17 @@ export default function TravelRequestPage() {
               </div>
             )}
 
+            {/* Step 3 Label */}
+            <p className={`pt-2 text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 3 ? '' : 'hidden'}`}>
+              Step 3 · Accommodation
+            </p>
+
             {/* Accommodation Section (shared for trip) */}
-            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
+            <div
+              className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
+                currentStep === 3 ? '' : 'hidden'
+              }`}
+            >
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-charcoal">Accommodation Info</h2>
                 <button
@@ -2066,13 +2104,22 @@ export default function TravelRequestPage() {
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
+            {/* Step 4 Label */}
+            <p className={`pt-2 text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 4 ? '' : 'hidden'}`}>
+              Step 4 · Dates & Allowance
+            </p>
+
             {/* Date Travel & Meal Info */}
-            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
-              <h2 className="mb-4 text-xl font-semibold text-charcoal">Date Travel & Meal Info</h2>
+            <div
+              className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
+                currentStep === 4 ? '' : 'hidden'
+              }`}
+            >
+              <h2 className="mb-1 text-xl font-semibold text-charcoal">Date Travel & Meal Info</h2>
+              <p className="mb-4 text-xs text-text-muted">
+                Set the full travel period and review meal allowance eligibility.
+              </p>
               
               <div className="space-y-4">
                 <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
@@ -2172,8 +2219,211 @@ export default function TravelRequestPage() {
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Notes */}
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Staff Details - Modern & Beautiful Design */}
+            <div className="rounded-3xl border border-card-border bg-gradient-to-br from-white to-brand.sand/20 p-6 shadow-lg backdrop-blur-sm overflow-hidden relative">
+              {/* Decorative gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand.violet via-purple-400 to-brand.violet/50"></div>
+              
+              <div className="mt-1">
+                <h2 className="mb-6 text-xl font-bold text-charcoal flex items-center gap-2">
+                  <div className="h-8 w-1 rounded-full bg-brand.violet"></div>
+                  Staff Details
+                </h2>
+                
+                {/* Profile Header - Enhanced */}
+                <div className="flex items-start gap-4 mb-6 pb-6 border-b border-gradient-to-r from-transparent via-card-border to-transparent">
+                  <div className="relative">
+                    <div className="h-24 w-24 flex-shrink-0 rounded-2xl bg-gradient-to-br from-brand.violet/20 to-purple-400/20 flex items-center justify-center shadow-lg ring-4 ring-white/50">
+                      {staffProfile?.avatarUrl ? (
+                        <img
+                          src={staffProfile.avatarUrl}
+                          alt={staffProfile.name || 'Staff'}
+                          className="h-24 w-24 rounded-2xl object-cover"
+                        />
+                      ) : (
+                        <UserRound className="h-12 w-12 text-brand.violet" />
+                      )}
+                    </div>
+                    {staffProfile?.work.role === 'admin' && (
+                      <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-purple-500 flex items-center justify-center ring-2 ring-white">
+                        <span className="text-[10px] font-bold text-white">A</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h3 className="text-xl font-bold text-charcoal mb-1.5 leading-tight">
+                      {staffProfile?.fullName || staffProfile?.name || 'Staff Member'}
+                    </h3>
+                    {staffProfile?.work.position && (
+                      <div className="inline-flex items-center gap-2 mb-2">
+                        <Briefcase className="h-3.5 w-3.5 text-brand.violet" />
+                        <p className="text-sm font-semibold text-brand.violet">
+                          {staffProfile.work.position}
+                        </p>
+                      </div>
+                    )}
+                    {staffProfile?.work.department && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand.violet/10 border border-brand.violet/20">
+                        <Building2 className="h-3 w-3 text-brand.violet" />
+                        <p className="text-xs font-medium text-brand.violet">
+                          {staffProfile.work.department}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Information Sections - Modern Cards */}
+                <div className="space-y-4">
+                  {/* Personal Information */}
+                  {(staffProfile?.icNo || staffProfile?.passport.passportNo || staffProfile?.passport.expiryDate) && (
+                    <div className="rounded-2xl bg-white/60 backdrop-blur-sm border border-card-border/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand.violet mb-3 flex items-center gap-2">
+                        <UserRound className="h-3.5 w-3.5" />
+                        Personal Information
+                      </h4>
+                      <div className="space-y-3">
+                        {staffProfile?.icNo && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                              <Hash className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">NRIC</p>
+                              <p className="text-sm font-semibold text-charcoal">{staffProfile.icNo}</p>
+                            </div>
+                          </div>
+                        )}
+                        {staffProfile?.passport.passportNo && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                              <FileText className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Passport Number</p>
+                              <p className="text-sm font-semibold text-charcoal">{staffProfile.passport.passportNo}</p>
+                            </div>
+                          </div>
+                        )}
+                        {staffProfile?.passport.expiryDate && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                              <Calendar className="h-4 w-4 text-orange-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Passport Expiry</p>
+                              <p className="text-sm font-semibold text-charcoal">
+                                {new Date(staffProfile.passport.expiryDate).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Work Information */}
+                  {(staffProfile?.work.employeeNo || staffProfile?.work.jobGrade || staffProfile?.work.position || staffProfile?.work.department) && (
+                    <div className="rounded-2xl bg-white/60 backdrop-blur-sm border border-card-border/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand.violet mb-3 flex items-center gap-2">
+                        <Briefcase className="h-3.5 w-3.5" />
+                        Work Information
+                      </h4>
+                      <div className="space-y-3">
+                        {staffProfile?.work.employeeNo && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                              <Hash className="h-4 w-4 text-purple-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Employee Number</p>
+                              <p className="text-sm font-semibold text-charcoal">{staffProfile.work.employeeNo}</p>
+                            </div>
+                          </div>
+                        )}
+                        {staffProfile?.work.jobGrade && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                              <Briefcase className="h-4 w-4 text-indigo-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Job Grade</p>
+                              <p className="text-sm font-semibold text-charcoal">{staffProfile.work.jobGrade}</p>
+                            </div>
+                          </div>
+                        )}
+                        {staffProfile?.work.position && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-cyan-100 flex items-center justify-center group-hover:bg-cyan-200 transition-colors">
+                              <Briefcase className="h-4 w-4 text-cyan-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Position</p>
+                              <p className="text-sm font-semibold text-charcoal">{staffProfile.work.position}</p>
+                            </div>
+                          </div>
+                        )}
+                        {staffProfile?.work.department && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-pink-100 flex items-center justify-center group-hover:bg-pink-200 transition-colors">
+                              <Building2 className="h-4 w-4 text-pink-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Department</p>
+                              <p className="text-sm font-semibold text-charcoal">{staffProfile.work.department}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contact Information */}
+                  {(staffProfile?.work.email || staffProfile?.phone) && (
+                    <div className="rounded-2xl bg-white/60 backdrop-blur-sm border border-card-border/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand.violet mb-3 flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5" />
+                        Contact Information
+                      </h4>
+                      <div className="space-y-3">
+                        {staffProfile?.work.email && (
+                          <div className="flex items-start gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors mt-0.5">
+                              <Mail className="h-4 w-4 text-red-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Email Address</p>
+                              <p className="text-sm font-semibold text-charcoal break-all">{staffProfile.work.email}</p>
+                            </div>
+                          </div>
+                        )}
+                        {staffProfile?.phone && (
+                          <div className="flex items-center gap-3 group">
+                            <div className="h-8 w-8 rounded-lg bg-teal-100 flex items-center justify-center group-hover:bg-teal-200 transition-colors">
+                              <Phone className="h-4 w-4 text-teal-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-text-muted mb-0.5">Phone Number</p>
+                              <p className="text-sm font-semibold text-charcoal">{staffProfile.phone}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Notes - Always Visible */}
             <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
               <h3 className="mb-3 text-lg font-semibold text-charcoal">Notes:</h3>
               <div className="space-y-2 text-sm text-text-muted">
@@ -2184,16 +2434,44 @@ export default function TravelRequestPage() {
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
+        {/* Navigation & Submit */}
+        <div className="mt-4 flex items-center justify-between rounded-3xl bg-white/80 px-4 py-3 shadow-card">
           <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-8 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f] disabled:bg-[#8c4b2d]/60"
+            type="button"
+            onClick={() => {
+              setCurrentStep((prev) => Math.max(prev - 1, 1))
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            disabled={currentStep === 1}
+            className="rounded-xl border border-card-border px-4 py-2 text-sm font-semibold text-text-muted transition hover:bg-brand.sand/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Lock className="h-4 w-4" />
-            {isSubmitting ? 'Submitting...' : 'Register'}
+            Back
           </button>
+
+          <div className="flex items-center gap-3">
+            {currentStep < 4 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentStep((prev) => Math.min(prev + 1, 4))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-6 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f]"
+              >
+                Next
+              </button>
+            )}
+            {currentStep === 4 && (
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-8 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f] disabled:bg-[#8c4b2d]/60"
+              >
+                <Lock className="h-4 w-4" />
+                {isSubmitting ? 'Submitting...' : 'Submit Request'}
+              </button>
+            )}
+          </div>
         </div>
       </form>
     </div>

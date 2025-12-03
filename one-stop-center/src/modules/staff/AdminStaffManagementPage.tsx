@@ -198,7 +198,7 @@ export default function AdminStaffManagementPage() {
 
         {/* Right: Staff Details Panel */}
         {selectedStaff && (
-          <div className="fixed right-4 top-20 z-50 h-[calc(100vh-6rem)] w-full max-w-md rounded-3xl border border-card-border bg-white shadow-2xl lg:relative lg:right-auto lg:top-auto lg:z-auto lg:h-auto lg:max-w-none lg:w-96">
+        <div className="fixed right-4 top-20 z-50 h-[calc(100vh-6rem)] w-full max-w-md rounded-3xl border border-card-border bg-white shadow-2xl 2xl:relative 2xl:right-auto 2xl:top-auto 2xl:z-auto 2xl:h-auto 2xl:max-w-none 2xl:w-96">
             <div className="flex h-full flex-col">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-card-border bg-brand.violet/5 p-6">
