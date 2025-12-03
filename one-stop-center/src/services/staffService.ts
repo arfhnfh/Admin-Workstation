@@ -175,6 +175,7 @@ export async function saveStaffProfile(profile: StaffProfile, authUserId: string
           role: profile.work.role,
           status: profile.work.status,
           auth_user_id: authUserId,
+          avatar_url: profile.avatarUrl ?? null,
         })
         .select('id')
         .single()
@@ -232,6 +233,7 @@ export async function saveStaffProfile(profile: StaffProfile, authUserId: string
           marital_status: profile.maritalStatus,
           role: profile.work.role,
           status: profile.work.status,
+          avatar_url: profile.avatarUrl ?? null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', staffId)
@@ -287,6 +289,33 @@ export async function saveStaffProfile(profile: StaffProfile, authUserId: string
   } catch (error) {
     return { error: error instanceof Error ? error : new Error('Failed to save profile') }
   }
+}
+
+export async function uploadStaffAvatar(file: File, staffId: string): Promise<string> {
+  if (!supabase) {
+    throw new Error('Supabase is not configured')
+  }
+
+  const bucket = 'staff-avatars'
+  const extension = file.name.split('.').pop() || 'jpg'
+  const path = `${staffId}/${Date.now()}.${extension}`
+
+  const { error } = await supabase.storage.from(bucket).upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+    cacheControl: '3600',
+  })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+  if (!data?.publicUrl) {
+    throw new Error('Failed to get public URL for avatar')
+  }
+
+  return data.publicUrl
 }
 
 export { createEmptyProfile }

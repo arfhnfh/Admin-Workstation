@@ -1,25 +1,54 @@
-import {
-  BookOpen,
-  Home,
-  LayoutGrid,
-  Settings,
-  UserRound,
-  Users,
-  Plane,
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BookOpen, Home, LayoutGrid, Settings, UserRound, Users, Plane } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-
-const navItems = [
-  { label: 'Home', icon: Home, path: '/' },
-  { label: 'Modules', icon: LayoutGrid, path: '/modules' },
-  { label: 'Staff System', icon: UserRound, path: '/staff' },
-  { label: 'Travel Request', icon: Plane, path: '/travel-request' },
-  { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
-  { label: 'Library', icon: BookOpen, path: '/library' },
-  { label: 'Settings', icon: Settings, path: '/settings' },
-]
+import { useAuthContext } from '@/hooks/useAuthContext'
+import { isUserAdmin } from '@/services/staffService'
 
 export function Sidebar() {
+  const { user } = useAuthContext()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const checkAdmin = async () => {
+      if (!user) {
+        if (isMounted) setIsAdmin(false)
+        return
+      }
+
+      try {
+        const admin = await isUserAdmin(user.id)
+        if (isMounted) setIsAdmin(admin)
+      } catch {
+        if (isMounted) setIsAdmin(false)
+      }
+    }
+
+    checkAdmin()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
+
+  const navItems = [
+    { label: 'Home', icon: Home, path: '/' },
+    { label: 'Modules', icon: LayoutGrid, path: '/modules' },
+    { label: 'Staff System', icon: UserRound, path: '/staff' },
+    { label: 'Travel Request', icon: Plane, path: '/travel-request' },
+    // Admin-only items
+    ...(isAdmin
+      ? [
+          { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
+          { label: 'Manage Library', icon: BookOpen, path: '/library/manage' },
+        ]
+      : []),
+    // Staff-facing Library (scan & borrow)
+    { label: 'Library', icon: BookOpen, path: '/library' },
+    { label: 'Settings', icon: Settings, path: '/settings' },
+  ]
+
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-card-border bg-white/90 p-6 shadow-card lg:flex">
       <div className="mb-8 flex items-center gap-3">

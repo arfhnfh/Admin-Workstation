@@ -4,6 +4,8 @@ import { ArrowLeft, BookPlus, Flame, Image as ImageIcon, Palette, Shapes } from 
 import classNames from 'classnames'
 import { useLibraryAdminStore } from '@/store/libraryAdminStore'
 import { createBook, createCategory, fetchBookCategories, fetchLibraryOverview, uploadBookCover } from '@/services/libraryService'
+import { useAuthContext } from '@/hooks/useAuthContext'
+import { isUserAdmin } from '@/services/staffService'
 
 type Mode = 'category' | 'book'
 
@@ -17,7 +19,10 @@ const DEFAULT_COVER =
 
 export default function AddLibraryItemPage() {
   const navigate = useNavigate()
+  const { user } = useAuthContext()
   const categories = useLibraryAdminStore((state) => state.categories)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [checkingRole, setCheckingRole] = useState(true)
   const [mode, setMode] = useState<Mode>('book')
   const [preview, setPreview] = useState<string | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
@@ -55,6 +60,27 @@ export default function AddLibraryItemPage() {
       })
     }
   }, [categories.length])
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) {
+        setIsAdmin(false)
+        setCheckingRole(false)
+        return
+      }
+
+      try {
+        const admin = await isUserAdmin(user.id)
+        setIsAdmin(admin)
+      } catch {
+        setIsAdmin(false)
+      } finally {
+        setCheckingRole(false)
+      }
+    }
+
+    checkAdmin()
+  }, [user])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -125,43 +151,58 @@ export default function AddLibraryItemPage() {
 
   return (
     <div className="space-y-8 rounded-3xl bg-white/90 p-6 shadow-card">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Link to="/library" className="inline-flex items-center gap-2 text-sm text-brand.violet">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Library
-          </Link>
-          <h1 className="mt-3 text-3xl font-semibold text-charcoal">Manage collection</h1>
-          <p className="text-sm text-text-muted">
-            Add new categories or slot in fresh titles with cover art, availability, and hot indicators.
-          </p>
+      {checkingRole ? (
+        <div className="flex h-full min-h-[40vh] items-center justify-center">
+          <div className="animate-pulse text-text-muted">Checking access…</div>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="rounded-2xl border border-brand.violet/40 px-4 py-2 text-sm font-semibold text-brand.violet"
-        >
-          Cancel
-        </button>
-      </div>
+      ) : !isAdmin ? (
+        <div className="flex h-full min-h-[40vh] items-center justify-center">
+          <div className="space-y-2 text-center">
+            <p className="text-xl font-semibold text-charcoal">Access Denied</p>
+            <p className="text-sm text-text-muted">
+              You need admin privileges to access Manage Library.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <Link to="/library" className="inline-flex items-center gap-2 text-sm text-brand.violet">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Library
+              </Link>
+              <h1 className="mt-3 text-3xl font-semibold text-charcoal">Manage collection</h1>
+              <p className="text-sm text-text-muted">
+                Add new categories or slot in fresh titles with cover art, availability, and hot indicators.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate(-1)}
+              className="rounded-2xl border border-brand.violet/40 px-4 py-2 text-sm font-semibold text-brand.violet"
+            >
+              Cancel
+            </button>
+          </div>
 
-      <div className="flex flex-wrap gap-3 rounded-3xl bg-brand.sand/80 p-3">
-        {(['book', 'category'] as Mode[]).map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => setMode(option)}
-            className={classNames(
-              'flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition',
-              mode === option ? 'bg-white shadow-card text-charcoal' : 'text-text-muted',
-            )}
-          >
-            {option === 'book' ? <BookPlus className="h-4 w-4" /> : <Shapes className="h-4 w-4" />}
-            {option === 'book' ? 'Book' : 'Category'}
-          </button>
-        ))}
-      </div>
+          <div className="mt-4 flex flex-wrap gap-3 rounded-3xl bg-brand.sand/80 p-3">
+            {(['book', 'category'] as Mode[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setMode(option)}
+                className={classNames(
+                  'flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition',
+                  mode === option ? 'bg-white shadow-card text-charcoal' : 'text-text-muted',
+                )}
+              >
+                {option === 'book' ? <BookPlus className="h-4 w-4" /> : <Shapes className="h-4 w-4" />}
+                {option === 'book' ? 'Book' : 'Category'}
+              </button>
+            ))}
+          </div>
 
-      {mode === 'category' ? (
+          {mode === 'category' ? (
         <form onSubmit={handleAddCategory} className="grid gap-6 rounded-3xl border border-card-border p-6 shadow-card">
           <div className="flex items-center gap-3">
             <Palette className="h-6 w-6 text-brand.violet" />
@@ -208,7 +249,7 @@ export default function AddLibraryItemPage() {
             {savingCategory ? 'Saving...' : 'Save category'}
           </button>
         </form>
-      ) : (
+          ) : (
         <form onSubmit={handleAddBook} className="grid gap-6 rounded-3xl border border-card-border p-6 shadow-card">
           <div className="flex items-center gap-3">
             <BookPlus className="h-6 w-6 text-brand.violet" />
@@ -358,12 +399,14 @@ export default function AddLibraryItemPage() {
             {savingBook ? 'Saving...' : 'Save book'}
           </button>
         </form>
-      )}
+          )}
 
-      {statusMessage && (
-        <div className="rounded-2xl bg-brand.sand/80 px-4 py-3 text-center text-sm font-semibold text-brand.violet">
-          {statusMessage}
-        </div>
+          {statusMessage && (
+            <div className="mt-4 rounded-2xl bg-brand.sand/80 px-4 py-3 text-center text-sm font-semibold text-brand.violet">
+              {statusMessage}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
