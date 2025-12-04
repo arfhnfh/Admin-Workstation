@@ -16,6 +16,7 @@ type LibraryAdminState = {
       loans?: LibraryBook['loans']
     },
   ) => LibraryBook
+  removeBook: (bookId: string) => void
   setCategories: (categories: BookCategory[]) => void
   setBooks: (books: LibraryBook[]) => void
 }
@@ -70,6 +71,11 @@ export const useLibraryAdminStore = create<LibraryAdminState>((set) => ({
       return { books }
     })
     return book
+  },
+  removeBook: (bookId) => {
+    set((state) => ({
+      books: state.books.filter((book) => book.id !== bookId),
+    }))
   },
   setCategories: (categories) => set({ categories }),
   setBooks: (books) => set({ books }),

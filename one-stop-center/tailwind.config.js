@@ -13,6 +13,8 @@ const palette = {
   charcoal: '#2e2a3b',
 }
 
+//asdasasdasdasd//
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {

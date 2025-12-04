@@ -199,6 +199,29 @@ export default function TravelRequestPage() {
     }>
   >([])
 
+  const steps = [
+    {
+      id: 1,
+      title: 'Travel Details',
+      description: 'Destination, reason, purpose & attachments',
+    },
+    {
+      id: 2,
+      title: 'Trip Segments',
+      description: 'Going trip and (if needed) return trip transportation',
+    },
+    {
+      id: 3,
+      title: 'Accommodation',
+      description: 'Hotel details, members, and stay dates',
+    },
+    {
+      id: 4,
+      title: 'Dates & Allowance',
+      description: 'Overall travel dates and meal allowance info',
+    },
+  ]
+
   useEffect(() => {
     const loadStaffProfile = async () => {
       if (!user) return
@@ -424,6 +447,33 @@ export default function TravelRequestPage() {
 
     alert('Travel request submitted successfully! It will be sent to HOD for further action.')
     setIsSubmitting(false)
+    // TODO: Submit to backend
+    console.log('Travel Request Data:', {
+      destination,
+      reason,
+      travelType,
+      travelTypeRadio,
+      attachments,
+      startDateTime,
+      endDateTime,
+      transportationType,
+      accommodations,
+      flights,
+      buses,
+      ferries,
+      trains,
+      luggageNo,
+      luggageWeight,
+      pickupLocation,
+      pickupDateTime,
+      mealDays,
+    })
+
+    // Simulate API call
+    setTimeout(() => {
+      alert('Travel request submitted successfully! It will be sent to HOD for further action.')
+      setIsSubmitting(false)
+    }, 1000)
   }
 
   useEffect(() => {
@@ -601,51 +651,33 @@ export default function TravelRequestPage() {
       
       {/* Step Navigation Tabs */}
       <div className="rounded-3xl border border-card-border bg-white/80 p-4 shadow-card">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCurrentStep(1)}
-            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
-              currentStep === 1
-                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Step 1 · Travel Info
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentStep(2)}
-            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
-              currentStep === 2
-                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Step 2 · Travel Details
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentStep(3)}
-            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
-              currentStep === 3
-                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Step 3 · Accommodation
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentStep(4)}
-            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
-              currentStep === 4
-                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Step 4 · Meal Allowance
-          </button>
+        <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+          {steps.map((step) => {
+            const isActive = currentStep === step.id
+            return (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => setCurrentStep(step.id)}
+                className={`flex-1 flex flex-col items-start rounded-2xl px-5 py-3 text-left text-sm transition-colors ${
+                  isActive
+                    ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span className="font-semibold">
+                  Step {step.id} · {step.title}
+                </span>
+                <span
+                  className={`mt-0.5 text-xs ${
+                    isActive ? 'text-white/80' : 'text-text-muted'
+                  }`}
+                >
+                  {step.description}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -800,14 +832,13 @@ export default function TravelRequestPage() {
                         Expiry Date
                       </label>
                       <p className="text-sm font-semibold text-charcoal ml-7">
-                        {staffProfile?.passport.expiryDate 
+                        {staffProfile?.passport?.expiryDate 
                           ? new Date(staffProfile.passport.expiryDate).toLocaleDateString('en-US', { 
                               year: 'numeric', 
                               month: 'short', 
                               day: 'numeric' 
                             })
-                          : '-'
-                        }
+                          : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -818,6 +849,17 @@ export default function TravelRequestPage() {
           {/* Step 1 - Travel Info */}
           {currentStep === 1 && (
             <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
+              {/* Step 1 Label */}
+              <p className={`text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 1 ? '' : 'hidden'}`}>
+                Step 1 · Travel Details
+              </p>
+
+              {/* Travel Info */}
+              <div
+                className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
+                  currentStep === 1 ? '' : 'hidden'
+                }`}
+              >
               <h2 className="mb-4 text-xl font-semibold text-charcoal">Travel Info</h2>
               
               <div className="space-y-4">
@@ -959,6 +1001,7 @@ export default function TravelRequestPage() {
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           )}
 
@@ -2425,29 +2468,26 @@ export default function TravelRequestPage() {
               </div>
             </div>
           )}
-        {/* INNER CONTAINER END */}
-        </div>
 
-        {/* Submit Button */}
-        <div className="flex items-center justify-end gap-3">
-          {!formIsValid && (
-            <p className="text-xs text-text-muted">
-              Please fill all required fields to submit
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={isSubmitting || !formIsValid}
-            className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-8 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f] disabled:bg-[#8c4b2d]/60 disabled:cursor-not-allowed"
-            title={!formIsValid ? 'Please fill all required fields' : ''}
-          >
-            <Lock className="h-4 w-4" />
-            {isSubmitting ? 'Submitting...' : 'Register'}
-          </button>
+          {/* Submit Button */}
+          <div className="flex items-center justify-end gap-3">
+            {!formIsValid && (
+              <p className="text-xs text-text-muted">
+                Please fill all required fields to submit
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={isSubmitting || !formIsValid}
+              className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-8 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f] disabled:bg-[#8c4b2d]/60 disabled:cursor-not-allowed"
+              title={!formIsValid ? 'Please fill all required fields' : ''}
+            >
+              <Lock className="h-4 w-4" />
+              {isSubmitting ? 'Submitting...' : 'Register'}
+            </button>
+          </div>
         </div>
-      {/* FORM END */}
       </form>
-    {/* OUTER CONTAINER END */}
     </div>
   )
 }

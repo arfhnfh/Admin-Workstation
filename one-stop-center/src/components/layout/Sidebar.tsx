@@ -1,4 +1,12 @@
-import { BookOpen, Home, LayoutGrid, Settings, UserRound, Users, Plane } from 'lucide-react'
+import {
+  BookOpen,
+  Home,
+  LayoutGrid,
+  Settings,
+  UserRound,
+  Users,
+  Plane,
+} from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const navItems = [
