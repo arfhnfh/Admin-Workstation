@@ -31,6 +31,10 @@ export const router = createBrowserRouter([
       },
       {
         path: 'manage',
+        element: <LibraryHubPage />,
+      },
+      {
+        path: 'collection',
         element: <AddLibraryItemPage />,
       },
     ],

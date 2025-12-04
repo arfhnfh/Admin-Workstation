@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import {
   BookOpen,
   CalendarCheck,
@@ -21,8 +21,6 @@ import {
 } from 'lucide-react'
 import classNames from 'classnames'
 import type { BookCategory, LibraryBook, LibraryLeaderboardEntry, LibraryChatMessage } from '@/types/library'
-import { RoleToggle } from '@/components/ui/RoleToggle'
-import { useSessionStore } from '@/store/sessionStore'
 import {
   fetchLibraryOverview,
   type LibraryOverview,
@@ -777,9 +775,14 @@ function ChatPanel({
 }
 
 export default function LibraryHubPage() {
-  const { role } = useSessionStore()
   const { user } = useAuthContext()
   const location = useLocation()
+
+  // Derive role from route:
+  // - `/library`        => staff view (scan & borrow)
+  // - `/library/manage` => admin view (log, manual assign, delete)
+  const isAdminView = location.pathname.includes('/library/manage')
+  const role: 'staff' | 'admin' = isAdminView ? 'admin' : 'staff'
   const localCategories = useLibraryAdminStore((state) => state.categories)
   const localBooks = useLibraryAdminStore((state) => state.books)
   const [overview, setOverview] = useState<LibraryOverview | null>(null)
@@ -885,10 +888,9 @@ export default function LibraryHubPage() {
               Borrow, return and monitor every book from one delightful interface.
             </p>
           </div>
-          <RoleToggle />
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl bg-brand.sand/60 p-4">
+          <div className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl bg-brand.sand/60 p-4">
           <div className="flex flex-1 items-center gap-2 rounded-3xl bg-white px-4 py-2 shadow-inner">
             <Search className="h-4 w-4 text-text-muted" />
             <input
@@ -902,15 +904,6 @@ export default function LibraryHubPage() {
             Search
             <ChevronRight className="h-4 w-4" />
           </button>
-          {role === 'admin' && (
-            <Link
-              to="/library/manage"
-              className="flex items-center gap-2 rounded-3xl bg-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-purple-600"
-            >
-              <Plus className="h-4 w-4" />
-              Add category / book
-            </Link>
-          )}
         </div>
 
         {categories.length > 0 && (

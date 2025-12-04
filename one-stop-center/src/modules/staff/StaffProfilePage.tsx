@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigation, useLoaderData, useRevalidator, useParams } from 'react-router-dom'
-import { BadgeCheck, CalendarDays, Mail, Phone, UserRound, Save, Edit2 } from 'lucide-react'
+import { BadgeCheck, CalendarDays, Mail, Phone, UserRound, Save, Edit2, Image as ImageIcon } from 'lucide-react'
 import type { StaffProfile } from '@/types/staff'
 import { RoleToggle } from '@/components/ui/RoleToggle'
 import { useAuthContext } from '@/hooks/useAuthContext'
-import { fetchStaffProfileByAuthId, saveStaffProfile, createEmptyProfile, isUserAdmin } from '@/services/staffService'
+import { fetchStaffProfileByAuthId, saveStaffProfile, createEmptyProfile, isUserAdmin, uploadStaffAvatar } from '@/services/staffService'
 
 const labelClass = 'text-xs uppercase tracking-[0.2em] text-text-muted'
 
@@ -104,6 +104,8 @@ export default function StaffProfilePage() {
   const [profile, setProfile] = useState<StaffProfile | null>(initialProfile)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isEditingOtherStaff, setIsEditingOtherStaff] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   const isLoading = navigation.state === 'loading'
   const targetStaffId = params.staffId || (params as any).staffId
@@ -173,9 +175,24 @@ export default function StaffProfilePage() {
     setIsSaving(true)
     setSaveMessage(null)
 
+    let updatedProfile = profile
+
+    // Upload avatar first if a new file is selected
+    if (avatarFile && profile.id) {
+      try {
+        const url = await uploadStaffAvatar(avatarFile, profile.id)
+        updatedProfile = { ...profile, avatarUrl: url }
+        setProfile(updatedProfile)
+      } catch (error) {
+        setSaveMessage(error instanceof Error ? `Error uploading avatar: ${error.message}` : 'Error uploading avatar')
+        setIsSaving(false)
+        return
+      }
+    }
+
     // If admin is editing another staff member, pass the target staff ID
     const targetId = isEditingOtherStaff && targetStaffId ? targetStaffId : undefined
-    const { error } = await saveStaffProfile(profile, user.id, targetId)
+    const { error } = await saveStaffProfile(updatedProfile, user.id, targetId)
     
     if (error) {
       setSaveMessage(`Error: ${error.message}`)
@@ -185,8 +202,9 @@ export default function StaffProfilePage() {
       revalidator.revalidate()
     }
 
-    setIsSaving(false)
-    setTimeout(() => setSaveMessage(null), 3000)
+      setIsSaving(false)
+      setAvatarFile(null)
+      setTimeout(() => setSaveMessage(null), 3000)
   }
 
   const updateProfile = (updates: Partial<StaffProfile>) => {
@@ -265,9 +283,13 @@ export default function StaffProfilePage() {
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <section className="rounded-3xl border border-card-border bg-white/90 p-6 shadow-card">
           <div className="flex items-center gap-4">
-            <div className="h-20 w-20 rounded-3xl bg-brand.violet/10 flex items-center justify-center">
-              {profile.avatarUrl ? (
-                <img src={profile.avatarUrl} alt={profile.name} className="h-20 w-20 rounded-3xl object-cover" />
+            <div className="h-20 w-20 rounded-3xl bg-brand.violet/10 flex items-center justify-center overflow-hidden">
+              {avatarPreview || profile.avatarUrl ? (
+                <img
+                  src={avatarPreview || profile.avatarUrl || ''}
+                  alt={profile.name}
+                  className="h-20 w-20 rounded-3xl object-cover"
+                />
               ) : (
                 <UserRound className="h-10 w-10 text-brand.violet" />
               )}
@@ -276,6 +298,28 @@ export default function StaffProfilePage() {
               <p className="text-sm text-text-muted">Personal Info</p>
               {isEditing ? (
                 <>
+                  <div className="mb-3">
+                    <label className="inline-flex items-center gap-2 text-xs font-semibold text-brand.violet cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) {
+                            setAvatarFile(null)
+                            setAvatarPreview(null)
+                            return
+                          }
+                          setAvatarFile(file)
+                          const previewUrl = URL.createObjectURL(file)
+                          setAvatarPreview(previewUrl)
+                        }}
+                      />
+                      <ImageIcon className="h-4 w-4" />
+                      <span>Upload photo</span>
+                    </label>
+                  </div>
                   <input
                     type="text"
                     value={profile.name}
