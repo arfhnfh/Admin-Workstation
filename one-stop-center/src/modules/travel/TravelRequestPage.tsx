@@ -14,6 +14,14 @@ import {
   FileText,
   Luggage,
   Plane as PlaneIcon,
+  User,
+  Mail,
+  Phone,
+  IdCard,
+  Briefcase as BriefcaseIcon,
+  Award,
+  Building,
+  CreditCard,
 } from 'lucide-react'
 import { parse, parseISO, isValid as isValidDate } from 'date-fns'
 import { useAuthContext } from '@/hooks/useAuthContext'
@@ -148,6 +156,7 @@ export default function TravelRequestPage() {
     { hotelName: '', hotelLocation: '', membersList: '', hotelRate: '', checkIn: '', checkOut: '', remarkLink: '' }
   ])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
   
   // Transportation-specific state
   const [flights, setFlights] = useState<FlightInfo[]>([{
@@ -199,6 +208,11 @@ export default function TravelRequestPage() {
     }
     loadStaffProfile()
   }, [user])
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentStep])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -479,6 +493,92 @@ export default function TravelRequestPage() {
     return total + dayTotal
   }, 0)
 
+  // Validation function to check if all required fields are filled
+  const isFormValid = () => {
+    // Step 1: Travel Info validation
+    if (!destination.trim() || !reason.trim() || !startDateTime || !endDateTime || !travelType || !travelTypeRadio) {
+      return false
+    }
+
+    // Step 2: Transportation validation
+    if (!transportationType) {
+      return false
+    }
+
+    // Validate transportation-specific fields based on type
+    if (transportationType === 'FLIGHT') {
+      if (flights.length === 0) return false
+      const hasInvalidFlight = flights.some(flight => 
+        !flight.date || !flight.flightCompany || !flight.fromAirport || !flight.toAirport || !flight.estimatedAirfare
+      )
+      if (hasInvalidFlight) return false
+    } else if (transportationType === 'BUS') {
+      if (buses.length === 0) return false
+      const hasInvalidBus = buses.some(bus => 
+        !bus.date || !bus.busCompany || !bus.fromTerminal || !bus.toTerminal || !bus.estimatedFare
+      )
+      if (hasInvalidBus) return false
+    } else if (transportationType === 'FERRY') {
+      if (ferries.length === 0) return false
+      const hasInvalidFerry = ferries.some(ferry => 
+        !ferry.date || !ferry.ferryCompany || !ferry.fromTerminal || !ferry.toTerminal || !ferry.estimatedFare
+      )
+      if (hasInvalidFerry) return false
+    } else if (transportationType === 'TRAIN') {
+      if (trains.length === 0) return false
+      const hasInvalidTrain = trains.some(train => 
+        !train.date || !train.trainCompany || !train.fromTerminal || !train.toTerminal || !train.estimatedFare
+      )
+      if (hasInvalidTrain) return false
+    }
+
+    // Validate return trip if round-trip
+    if (travelTypeRadio === 'round-trip') {
+      if (!returnTransportationType) {
+        return false
+      }
+
+      if (returnTransportationType === 'FLIGHT') {
+        if (returnFlights.length === 0) return false
+        const hasInvalidFlight = returnFlights.some(flight => 
+          !flight.date || !flight.flightCompany || !flight.fromAirport || !flight.toAirport || !flight.estimatedAirfare
+        )
+        if (hasInvalidFlight) return false
+      } else if (returnTransportationType === 'BUS') {
+        if (returnBuses.length === 0) return false
+        const hasInvalidBus = returnBuses.some(bus => 
+          !bus.date || !bus.busCompany || !bus.fromTerminal || !bus.toTerminal || !bus.estimatedFare
+        )
+        if (hasInvalidBus) return false
+      } else if (returnTransportationType === 'FERRY') {
+        if (returnFerries.length === 0) return false
+        const hasInvalidFerry = returnFerries.some(ferry => 
+          !ferry.date || !ferry.ferryCompany || !ferry.fromTerminal || !ferry.toTerminal || !ferry.estimatedFare
+        )
+        if (hasInvalidFerry) return false
+      } else if (returnTransportationType === 'TRAIN') {
+        if (returnTrains.length === 0) return false
+        const hasInvalidTrain = returnTrains.some(train => 
+          !train.date || !train.trainCompany || !train.fromTerminal || !train.toTerminal || !train.estimatedFare
+        )
+        if (hasInvalidTrain) return false
+      }
+    }
+
+    // Step 3: Accommodation validation (if accommodation is shown)
+    if (showAccommodation && accommodations.length > 0) {
+      const hasInvalidAccommodation = accommodations.some(acc => 
+        !acc.hotelName.trim() || !acc.hotelLocation.trim() || !acc.membersList.trim() || 
+        !acc.hotelRate.trim() || !acc.checkIn || !acc.checkOut
+      )
+      if (hasInvalidAccommodation) return false
+    }
+
+    return true
+  }
+
+  const formIsValid = isFormValid()
+
   if (loading) {
     return (
       <div className="flex h-full min-h-[70vh] items-center justify-center rounded-3xl bg-white/70 shadow-card">
@@ -498,65 +598,225 @@ export default function TravelRequestPage() {
           <p className="text-sm text-text-muted">Submit your travel request for approval.</p>
         </div>
       </div>
+      
+      {/* Step Navigation Tabs */}
+      <div className="rounded-3xl border border-card-border bg-white/80 p-4 shadow-card">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setCurrentStep(1)}
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
+              currentStep === 1
+                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Step 1 · Travel Info
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentStep(2)}
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
+              currentStep === 2
+                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Step 2 · Travel Details
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentStep(3)}
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
+              currentStep === 3
+                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Step 3 · Accommodation
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentStep(4)}
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
+              currentStep === 4
+                ? 'bg-[#8c4b2d] text-white shadow-md hover:bg-[#6f361f]'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Step 4 · Meal Allowance
+          </button>
+        </div>
+      </div>
+
+      {/* FORM START */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Staff Info */}
+        {/* INNER CONTAINER START - Contains all form sections */}
+        <div className="space-y-6">
+            {/* Staff Info - Always Visible - Beautiful & Neat Design */}
             <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
-              <h2 className="mb-4 text-xl font-semibold text-charcoal">Staff Info</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Full Name</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">
-                    {staffProfile?.fullName || staffProfile?.name || '-'}
-                  </p>
+              <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand.violet via-purple-600 to-purple-700 shadow-lg">
+                  <User className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">NRIC</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.icNo || '-'}</p>
+                  <h2 className="text-xl font-semibold text-charcoal">Staff Information</h2>
+                  <p className="text-xs text-text-muted mt-0.5">Your profile details</p>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Email</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.email || '-'}</p>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {/* Personal Information Group */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+                      <User className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-charcoal">Personal</h3>
+                  </div>
+                  
+                  <div className="space-y-3.5">
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <User className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Full Name
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">
+                        {staffProfile?.fullName || staffProfile?.name || '-'}
+                      </p>
+                    </div>
+
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <IdCard className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        NRIC
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">{staffProfile?.icNo || '-'}</p>
+                    </div>
+
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <Mail className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Email
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7 break-all">{staffProfile?.work.email || '-'}</p>
+                    </div>
+
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <Phone className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Mobile No.
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">{staffProfile?.phone || '-'}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Mobile No.</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.phone || '-'}</p>
+
+                {/* Work Information Group */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
+                      <BriefcaseIcon className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-charcoal">Work Details</h3>
+                  </div>
+                  
+                  <div className="space-y-3.5">
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <FileText className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Employee No.
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">{staffProfile?.work.employeeNo || '-'}</p>
+                    </div>
+
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <Award className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Job Grade
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">{staffProfile?.work.jobGrade || '-'}</p>
+                    </div>
+
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <BriefcaseIcon className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Position
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">{staffProfile?.work.position || '-'}</p>
+                    </div>
+
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <Building className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Department
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">{staffProfile?.work.department || '-'}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Employee No.</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.employeeNo || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Job Grade</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.jobGrade || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Position</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.position || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Department</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.department || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Passport No.</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.passport.passportNo || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Expiry Date</label>
-                  <p className="mt-1 text-sm font-semibold text-charcoal">
-                    {staffProfile?.passport.expiryDate 
-                      ? new Date(staffProfile.passport.expiryDate).toLocaleDateString()
-                      : '-'
-                    }
-                  </p>
+
+                {/* Travel Documents Group */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
+                      <CreditCard className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-charcoal">Travel Documents</h3>
+                  </div>
+                  
+                  <div className="space-y-3.5">
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <CreditCard className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Passport No.
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">{staffProfile?.passport.passportNo || '-'}</p>
+                    </div>
+
+                    <div className="group">
+                      <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                          <Calendar className="h-3 w-3 text-brand.violet" />
+                        </div>
+                        Expiry Date
+                      </label>
+                      <p className="text-sm font-semibold text-charcoal ml-7">
+                        {staffProfile?.passport.expiryDate 
+                          ? new Date(staffProfile.passport.expiryDate).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })
+                          : '-'
+                        }
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Travel Info */}
+          {/* Step 1 - Travel Info */}
+          {currentStep === 1 && (
             <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
               <h2 className="mb-4 text-xl font-semibold text-charcoal">Travel Info</h2>
               
@@ -700,7 +960,11 @@ export default function TravelRequestPage() {
                 </div>
               </div>
             </div>
+          )}
 
+          {/* Step 2 - Travel Details */}
+          {currentStep === 2 && (
+            <>
             {/* Going Trip Section */}
             <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
               <div className="mb-4 flex items-center justify-between">
@@ -1943,8 +2207,11 @@ export default function TravelRequestPage() {
                 </div>
               </div>
             )}
+            </>
+          )}
 
-            {/* Accommodation Section (shared for trip) */}
+          {/* Step 3 - Accommodation Info */}
+          {currentStep === 3 && (
             <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-charcoal">Accommodation Info</h2>
@@ -2083,18 +2350,11 @@ export default function TravelRequestPage() {
                 ))}
               </div>
             </div>
-          </div>
+          )}
 
-            {/* Step 4 - Meal Allowance Summary Only */}
-            <p className={`pt-2 text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 4 ? '' : 'hidden'}`}>
-              Step 4 · Dates & Allowance
-            </p>
-
-            <div
-              className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
-                currentStep === 4 ? '' : 'hidden'
-              }`}
-            >
+          {/* Step 4 - Meal Allowance Summary Only */}
+          {currentStep === 4 && (
+            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
               <h2 className="mb-1 text-xl font-semibold text-charcoal">Meal Allowance Summary</h2>
               <p className="mb-4 text-xs text-text-muted">
                 Based on your travel dates, review which meals are eligible and mark those provided for free.
@@ -2164,30 +2424,30 @@ export default function TravelRequestPage() {
                 )}
               </div>
             </div>
-
-            {/* Notes */}
-            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
-              <h3 className="mb-3 text-lg font-semibold text-charcoal">Notes:</h3>
-              <div className="space-y-2 text-sm text-text-muted">
-                <p>1) Input with red mark is required.</p>
-                <p>2) Submitted travel will send to HOD for further action.</p>
-              </div>
-            </div>
-          </div>
+          )}
+        {/* INNER CONTAINER END */}
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-3">
+          {!formIsValid && (
+            <p className="text-xs text-text-muted">
+              Please fill all required fields to submit
+            </p>
+          )}
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-8 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f] disabled:bg-[#8c4b2d]/60"
+            disabled={isSubmitting || !formIsValid}
+            className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-8 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f] disabled:bg-[#8c4b2d]/60 disabled:cursor-not-allowed"
+            title={!formIsValid ? 'Please fill all required fields' : ''}
           >
             <Lock className="h-4 w-4" />
             {isSubmitting ? 'Submitting...' : 'Register'}
           </button>
         </div>
+      {/* FORM END */}
       </form>
+    {/* OUTER CONTAINER END */}
     </div>
   )
 }
