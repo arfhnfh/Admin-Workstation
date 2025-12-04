@@ -5,8 +5,7 @@ import LibraryHubPage from '@/modules/library/LibraryHubPage'
 import AddLibraryItemPage from '@/modules/library/AddLibraryItemPage'
 import StaffProfilePage from '@/modules/staff/StaffProfilePage'
 import AdminStaffManagementPage from '@/modules/staff/AdminStaffManagementPage'
-import TravelRequestPage from '@/modules/travel/TravelRequestPage'
-import AdminTravelRequestsPage from '@/modules/travel/AdminTravelRequestsPage'
+// import TravelRequestPage from '@/modules/travel/TravelRequestPage' // Temporarily disabled due to JSX errors
 import LoginPage from '@/modules/auth/LoginPage'
 import SignupPage from '@/modules/auth/SignupPage'
 import { staffProfileLoader } from '@/modules/staff/loader'
@@ -59,20 +58,17 @@ export const router = createBrowserRouter([
         element: <StaffProfilePage />,
         loader: staffProfileLoader,
       },
-      {
-        path: 'travel-request',
-        element: <TravelRequestPage />,
-      },
+      // Temporarily disabled due to JSX structure errors
+      // {
+      //   path: 'travel-request',
+      //   element: <TravelRequestPage />,
+      // },
       {
         path: 'admin',
         children: [
           {
             path: 'staff',
             element: <AdminStaffManagementPage />,
-          },
-          {
-            path: 'travel-requests',
-            element: <AdminTravelRequestsPage />,
           },
           {
             path: 'staff/:staffId',

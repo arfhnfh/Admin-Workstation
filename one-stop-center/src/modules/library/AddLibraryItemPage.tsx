@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookPlus, Flame, Image as ImageIcon, Palette, Shapes } from 'lucide-react'
 import classNames from 'classnames'
 import { useLibraryAdminStore } from '@/store/libraryAdminStore'
-import { createBook, createCategory, fetchBookCategories, fetchLibraryOverview, uploadBookCover } from '@/services/libraryService'
+import type { LibraryBook } from '@/types/library'
+import {
+  createBook,
+  createCategory,
+  fetchBookCategories,
+  fetchLibraryOverview,
+  uploadBookCover,
+  updateBook,
+} from '@/services/libraryService'
 import { useAuthContext } from '@/hooks/useAuthContext'
 import { isUserAdmin } from '@/services/staffService'
 
@@ -19,8 +27,10 @@ const DEFAULT_COVER =
 
 export default function AddLibraryItemPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuthContext()
   const categories = useLibraryAdminStore((state) => state.categories)
+  const books = useLibraryAdminStore((state) => state.books)
   const [isAdmin, setIsAdmin] = useState(false)
   const [checkingRole, setCheckingRole] = useState(true)
   const [mode, setMode] = useState<Mode>('book')
@@ -46,6 +56,37 @@ export default function AddLibraryItemPage() {
     timesBorrowed: 0,
     maxLoanDays: 14,
   })
+
+  // Read mode from URL query parameter
+  useEffect(() => {
+    const modeParam = searchParams.get('mode')
+    if (modeParam === 'category' || modeParam === 'book') {
+      setMode(modeParam)
+    }
+  }, [searchParams])
+
+  // If editing (bookId present), prefill form with existing book data
+  useEffect(() => {
+    const bookId = searchParams.get('bookId')
+    if (!bookId) return
+
+    const existing = (books as LibraryBook[]).find((b) => b.id === bookId)
+    if (!existing) return
+
+    setMode('book')
+    setBookForm((prev) => ({
+      ...prev,
+      title: existing.title,
+      author: existing.author,
+      categoryId: existing.categoryId || prev.categoryId,
+      status: existing.status,
+      summary: existing.summary ?? '',
+      coverColor: existing.coverColor ?? prev.coverColor,
+      timesBorrowed: existing.stats?.timesBorrowed ?? prev.timesBorrowed,
+      maxLoanDays: existing.maxLoanDays ?? prev.maxLoanDays,
+    }))
+    setPreview(existing.coverImage || null)
+  }, [books, searchParams])
 
   useEffect(() => {
     if (categories.length && !bookForm.categoryId) {
@@ -122,24 +163,37 @@ export default function AddLibraryItemPage() {
     setStatusMessage(null)
     try {
       const coverUrl = coverFile ? await uploadBookCover(coverFile) : preview ?? DEFAULT_COVER
-      const created = await createBook({
+      const bookId = searchParams.get('bookId')
+
+      const payload = {
         ...bookForm,
         coverUrl,
-      })
-      await fetchLibraryOverview()
-      setStatusMessage(`Book “${created.title}” added to the shelf.`)
-      setBookForm({
-        title: '',
-        author: '',
-        categoryId: categories[0]?.id ?? '',
-        status: 'available',
-        summary: '',
-        coverColor: '#f7d6c4',
-        timesBorrowed: 0,
-        maxLoanDays: 14,
-      })
-      setPreview(null)
-      setCoverFile(null)
+      }
+
+      if (bookId) {
+        const updated = await updateBook(bookId, payload)
+        await fetchLibraryOverview()
+        setStatusMessage(`Book “${updated.title}” has been updated.`)
+      } else {
+        const created = await createBook(payload)
+        await fetchLibraryOverview()
+        setStatusMessage(`Book “${created.title}” added to the shelf.`)
+      }
+      // Jika create baru, reset form. Kalau edit, kekalkan data.
+      if (!bookId) {
+        setBookForm({
+          title: '',
+          author: '',
+          categoryId: categories[0]?.id ?? '',
+          status: 'available',
+          summary: '',
+          coverColor: '#f7d6c4',
+          timesBorrowed: 0,
+          maxLoanDays: 14,
+        })
+        setPreview(null)
+        setCoverFile(null)
+      }
     } catch (error) {
       setStatusMessage((error as Error).message)
     } finally {

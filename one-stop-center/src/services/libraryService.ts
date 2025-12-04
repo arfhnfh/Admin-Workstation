@@ -87,7 +87,8 @@ async function attachStaffProfilesToLeaderboard(
     }
   })
 
-  return entries.map((entry) => {
+  // First, enrich entries with staff profile data (name/avatar/id)
+  const enriched = entries.map((entry) => {
     const key = entry.staffId.toLowerCase()
     const emailKey = key.includes('@') ? key : undefined
     const usernameKey = key.includes('@') ? key.split('@')[0] : key
@@ -121,6 +122,24 @@ async function attachStaffProfilesToLeaderboard(
       borrowedCount: entry.borrowedCount,
     }
   })
+
+  // Then, merge duplicates that now point to the same staffId (same person)
+  const merged = new Map<string, LibraryLeaderboardEntry>()
+
+  for (const entry of enriched) {
+    const key = String(entry.staffId).toLowerCase()
+    const existing = merged.get(key)
+    if (existing) {
+      merged.set(key, {
+        ...existing,
+        borrowedCount: existing.borrowedCount + entry.borrowedCount,
+      })
+    } else {
+      merged.set(key, entry)
+    }
+  }
+
+  return Array.from(merged.values()).sort((a, b) => b.borrowedCount - a.borrowedCount)
 }
 
 export async function fetchLibraryOverview(): Promise<LibraryOverview> {
@@ -346,6 +365,80 @@ export async function createBook(input: NewBookInput): Promise<LibraryBook> {
 
   useLibraryAdminStore.getState().addBook(book)
   return book
+}
+
+export async function updateBook(bookId: string, input: NewBookInput): Promise<LibraryBook> {
+  if (!supabase) {
+    const store = useLibraryAdminStore.getState()
+    const existing = store.books.find((b) => b.id === bookId)
+    if (!existing) {
+      throw new Error('Book not found in local store')
+    }
+
+    const updated: LibraryBook = {
+      ...existing,
+      title: input.title,
+      author: input.author,
+      categoryId: input.categoryId,
+      coverImage: input.coverUrl,
+      coverColor: input.coverColor ?? existing.coverColor,
+      summary: input.summary,
+      maxLoanDays: input.maxLoanDays,
+      status: input.status,
+      stats: {
+        timesBorrowed: input.timesBorrowed ?? existing.stats.timesBorrowed,
+        rating: input.rating ?? existing.stats.rating,
+      },
+    }
+
+    store.addBook(updated)
+    return updated
+  }
+
+  const { data, error } = await supabase
+    .from('books')
+    .update({
+      category_id: input.categoryId,
+      title: input.title,
+      author: input.author,
+      cover_url: input.coverUrl,
+      synopsis: input.summary,
+      max_loan_days: input.maxLoanDays,
+    })
+    .eq('id', bookId)
+    .select('*')
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Failed to update book')
+  }
+
+  const store = useLibraryAdminStore.getState()
+  const existing = store.books.find((b) => b.id === bookId)
+
+  const updated: LibraryBook = {
+    id: data.id,
+    title: data.title,
+    author: data.author,
+    categoryId: data.category_id,
+    coverImage: data.cover_url ?? input.coverUrl,
+    coverColor: input.coverColor ?? existing?.coverColor ?? '#f7d6c4',
+    borrowerName: existing?.borrowerName ?? null,
+    status: input.status,
+    dueDate: existing?.dueDate ?? null,
+    summary: data.synopsis ?? input.summary,
+    maxLoanDays: input.maxLoanDays,
+    qrCodeUrl: existing?.qrCodeUrl,
+    copyId: existing?.copyId,
+    stats: {
+      timesBorrowed: input.timesBorrowed ?? existing?.stats.timesBorrowed ?? 0,
+      rating: input.rating ?? existing?.stats.rating ?? 4.5,
+    },
+    loans: existing?.loans ?? [],
+  }
+
+  store.addBook(updated)
+  return updated
 }
 
 export async function uploadBookCover(file: File): Promise<string> {
@@ -587,7 +680,19 @@ export async function scanBookQrCode(
     throw new Error('The active loan is missing borrower information. Please contact admin.')
   }
 
-  if (normalizedRequester !== normalizedLoanBorrower) {
+  // Allow match either by full identifier OR by username part before '@'.
+  // This handles cases where one side uses the full email (arifah.hanafiah@...)
+  // and the other side only stores the username (arifah.hanafiah).
+  const requesterUsername = normalizedRequester.split('@')[0]
+  const loanUsername = normalizedLoanBorrower.split('@')[0]
+
+  const isSameBorrower =
+    normalizedRequester === normalizedLoanBorrower ||
+    requesterUsername === normalizedLoanBorrower ||
+    normalizedRequester === loanUsername ||
+    requesterUsername === loanUsername
+
+  if (!isSameBorrower) {
     throw new Error(`Only ${activeLoan.borrower_name ?? 'the original borrower'} can return this book.`)
   }
 
