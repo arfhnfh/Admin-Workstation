@@ -546,3 +546,21 @@ export async function sendChatMessage(message: LibraryChatMessage): Promise<void
   // })
 }
 
+export async function deleteBook(bookId: string): Promise<void> {
+  if (!supabase) {
+    console.info('Mock delete book', bookId)
+    useLibraryAdminStore.getState().removeBook(bookId)
+    return
+  }
+
+  // Delete book (cascade will delete copies and loans)
+  const { error } = await supabase.from('books').delete().eq('id', bookId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  // Remove from local store
+  useLibraryAdminStore.getState().removeBook(bookId)
+}
+
