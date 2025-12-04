@@ -23,6 +23,7 @@ import {
 import { parse, parseISO, isValid as isValidDate } from 'date-fns'
 import { useAuthContext } from '@/hooks/useAuthContext'
 import { fetchStaffProfileByAuthId } from '@/services/staffService'
+import { createTravelRequest } from '@/services/travelService'
 import type { StaffProfile } from '@/types/staff'
 
 interface Accommodation {
@@ -415,6 +416,30 @@ export default function TravelRequestPage() {
     e.preventDefault()
     setIsSubmitting(true)
 
+    if (!staffProfile?.id) {
+      alert('Unable to submit: staff profile not loaded.')
+      setIsSubmitting(false)
+      return
+    }
+
+    const { error } = await createTravelRequest({
+      staffId: staffProfile.id,
+      destination,
+      reason,
+      startDateTime,
+      endDateTime,
+      totalMealAllowance,
+    })
+
+    if (error) {
+      console.error('Failed to submit travel request:', error)
+      alert('Failed to submit travel request. Please try again.')
+      setIsSubmitting(false)
+      return
+    }
+
+    alert('Travel request submitted successfully! It will be sent to HOD for further action.')
+    setIsSubmitting(false)
     // TODO: Submit to backend
     console.log('Travel Request Data:', {
       destination,
@@ -520,12 +545,18 @@ export default function TravelRequestPage() {
   }
 
   return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white/80 p-6 shadow-card">
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/80 px-4 py-3 shadow-card">
         <div>
           <nav className="text-sm text-text-muted">
             Home / <span className="text-brand.violet">Travel Request</span>
           </nav>
+          <h1 className="mt-2 text-3xl font-semibold text-charcoal">Travel Request</h1>
+          <p className="text-sm text-text-muted">Submit your travel request for approval.</p>
+        </div>
+      </div>
           <h1 className="mt-1 text-2xl font-semibold text-charcoal">Travel Request</h1>
           <p className="mt-1 text-xs text-text-muted">Submit your travel request for approval.</p>
         </div>
@@ -566,6 +597,62 @@ export default function TravelRequestPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Left Column */}
           <div className="space-y-6">
+            {/* Staff Info */}
+            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
+              <h2 className="mb-4 text-xl font-semibold text-charcoal">Staff Info</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Full Name</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">
+                    {staffProfile?.fullName || staffProfile?.name || '-'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">NRIC</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.icNo || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Email</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.email || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Mobile No.</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.phone || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Employee No.</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.employeeNo || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Job Grade</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.jobGrade || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Position</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.position || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Department</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.work.department || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Passport No.</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">{staffProfile?.passport.passportNo || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Expiry Date</label>
+                  <p className="mt-1 text-sm font-semibold text-charcoal">
+                    {staffProfile?.passport.expiryDate 
+                      ? new Date(staffProfile.passport.expiryDate).toLocaleDateString()
+                      : '-'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Travel Info */}
+            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
             {/* Step 1 Label */}
             <p className={`text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 1 ? '' : 'hidden'}`}>
               Step 1 · Travel Details
@@ -607,6 +694,35 @@ export default function TravelRequestPage() {
                     className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
                     placeholder="Enter reason"
                   />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-charcoal">
+                      <Calendar className="h-4 w-4" />
+                      Start Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={startDateTime}
+                      onChange={(e) => setStartDateTime(e.target.value)}
+                      className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-charcoal">
+                      <Calendar className="h-4 w-4" />
+                      End Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={endDateTime}
+                      onChange={(e) => setEndDateTime(e.target.value)}
+                      className="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-sm focus:border-brand.violet focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -659,6 +775,34 @@ export default function TravelRequestPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="mb-2 text-sm font-semibold text-charcoal">
+                    Travel Type <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="travelTypeRadio"
+                        value="one-way"
+                        checked={travelTypeRadio === 'one-way'}
+                        onChange={(e) => setTravelTypeRadio(e.target.value as 'one-way' | 'round-trip')}
+                        className="h-4 w-4 text-brand.violet focus:ring-brand.violet"
+                      />
+                      <span className="text-sm text-charcoal">One-Way</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="travelTypeRadio"
+                        value="round-trip"
+                        checked={travelTypeRadio === 'round-trip'}
+                        onChange={(e) => setTravelTypeRadio(e.target.value as 'one-way' | 'round-trip')}
+                        className="h-4 w-4 text-brand.violet focus:ring-brand.violet"
+                      />
+                      <span className="text-sm text-charcoal">Round-Trip</span>
+                    </label>
+                  </div>
               </div>
             </div>
 
@@ -710,6 +854,7 @@ export default function TravelRequestPage() {
             </div>
 
             {/* Going Trip Section */}
+            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
             <div
               className={`rounded-3xl border border-card-border bg-white/80 p-6 shadow-card ${
                 currentStep === 2 ? '' : 'hidden'
@@ -1956,6 +2101,8 @@ export default function TravelRequestPage() {
               </div>
             )}
 
+            {/* Accommodation Section (shared for trip) */}
+            <div className="rounded-3xl border border-card-border bg-white/80 p-6 shadow-card">
             {/* Step 3 Label */}
             <p className={`pt-2 text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 3 ? '' : 'hidden'}`}>
               Step 3 · Accommodation
@@ -2104,6 +2251,9 @@ export default function TravelRequestPage() {
                 ))}
               </div>
             </div>
+          </div>
+
+            {/* Step 4 - Meal Allowance Summary Only */}
 
             {/* Step 4 Label */}
             <p className={`pt-2 text-xs font-semibold uppercase tracking-wider text-text-muted ${currentStep === 4 ? '' : 'hidden'}`}>
@@ -2116,6 +2266,12 @@ export default function TravelRequestPage() {
                 currentStep === 4 ? '' : 'hidden'
               }`}
             >
+              <h2 className="mb-1 text-xl font-semibold text-charcoal">Meal Allowance Summary</h2>
+              <p className="mb-4 text-xs text-text-muted">
+                Based on your travel dates, review which meals are eligible and mark those provided for free.
+              </p>
+              
+              <div className="space-y-4">
               <h2 className="mb-1 text-xl font-semibold text-charcoal">Date Travel & Meal Info</h2>
               <p className="mb-4 text-xs text-text-muted">
                 Set the full travel period and review meal allowance eligibility.
@@ -2219,6 +2375,8 @@ export default function TravelRequestPage() {
                 )}
               </div>
             </div>
+
+            {/* Notes */}
           </div>
 
           {/* Right Column */}
@@ -2434,6 +2592,16 @@ export default function TravelRequestPage() {
           </div>
         </div>
 
+        {/* Submit Button */}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-8 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f] disabled:bg-[#8c4b2d]/60"
+          >
+            <Lock className="h-4 w-4" />
+            {isSubmitting ? 'Submitting...' : 'Register'}
+          </button>
         {/* Navigation & Submit */}
         <div className="mt-4 flex items-center justify-between rounded-3xl bg-white/80 px-4 py-3 shadow-card">
           <button

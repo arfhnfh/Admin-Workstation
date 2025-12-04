@@ -1,3 +1,4 @@
+import { BookOpen, Home, LayoutGrid, Settings, UserRound, Users, Plane } from 'lucide-react'
 import {
   BookOpen,
   Home,
@@ -14,6 +15,7 @@ const navItems = [
   { label: 'Modules', icon: LayoutGrid, path: '/modules' },
   { label: 'Staff System', icon: UserRound, path: '/staff' },
   { label: 'Travel Request', icon: Plane, path: '/travel-request' },
+  { label: 'Travel Approvals', icon: Plane, path: '/admin/travel-requests' },
   { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
   { label: 'Library', icon: BookOpen, path: '/library' },
   { label: 'Settings', icon: Settings, path: '/settings' },
