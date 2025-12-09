@@ -6,6 +6,8 @@ import AddLibraryItemPage from '@/modules/library/AddLibraryItemPage'
 import StaffProfilePage from '@/modules/staff/StaffProfilePage'
 import AdminStaffManagementPage from '@/modules/staff/AdminStaffManagementPage'
 // import TravelRequestPage from '@/modules/travel/TravelRequestPage' // Temporarily disabled due to JSX errors
+import RoomBookingPage from '@/modules/room-booking/RoomBookingPage'
+import AdminRoomBookingPage from '@/modules/room-booking/AdminRoomBookingPage'
 import LoginPage from '@/modules/auth/LoginPage'
 import SignupPage from '@/modules/auth/SignupPage'
 import { staffProfileLoader } from '@/modules/staff/loader'
@@ -64,6 +66,10 @@ export const router = createBrowserRouter([
       //   element: <TravelRequestPage />,
       // },
       {
+        path: 'room-booking',
+        element: <RoomBookingPage />,
+      },
+      {
         path: 'admin',
         children: [
           {
@@ -74,6 +80,10 @@ export const router = createBrowserRouter([
             path: 'staff/:staffId',
             element: <StaffProfilePage />,
             loader: staffProfileLoader,
+          },
+          {
+            path: 'room-booking',
+            element: <AdminRoomBookingPage />,
           },
         ],
       },

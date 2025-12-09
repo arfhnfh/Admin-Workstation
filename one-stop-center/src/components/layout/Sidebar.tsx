@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, Home, LayoutGrid, Settings, UserRound, Users, Plane } from 'lucide-react'
+import { BookOpen, Home, LayoutGrid, Settings, UserRound, Users, Plane, Calendar } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useAuthContext } from '@/hooks/useAuthContext'
 import { isUserAdmin } from '@/services/staffService'
@@ -37,11 +37,13 @@ export function Sidebar() {
     { label: 'Modules', icon: LayoutGrid, path: '/modules' },
     { label: 'Staff System', icon: UserRound, path: '/staff' },
     { label: 'Travel Request', icon: Plane, path: '/travel-request' },
+    { label: 'Room Booking', icon: Calendar, path: '/room-booking' },
     // Admin-only items
     ...(isAdmin
       ? [
           { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
           { label: 'Manage Library', icon: BookOpen, path: '/library/manage' },
+          { label: 'Manage Room Booking', icon: Calendar, path: '/admin/room-booking' },
         ]
       : []),
     // Staff-facing Library (scan & borrow)
