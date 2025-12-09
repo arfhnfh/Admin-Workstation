@@ -26,9 +26,17 @@ export default function AdminTravelRequestsPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const data = await fetchAllTravelRequests()
-      setRequests(data)
-      setLoading(false)
+      try {
+        const data = await fetchAllTravelRequests()
+        setRequests(data)
+        if (data.length === 0) {
+          console.warn('No travel requests found. Check if travel_requests_view exists in database.')
+        }
+      } catch (error) {
+        console.error('Failed to load travel requests:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])

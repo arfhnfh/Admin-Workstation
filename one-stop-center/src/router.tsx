@@ -7,6 +7,8 @@ import StaffProfilePage from '@/modules/staff/StaffProfilePage'
 import AdminStaffManagementPage from '@/modules/staff/AdminStaffManagementPage'
 import TravelRequestPage from '@/modules/travel/TravelRequestPage'
 import AdminTravelRequestsPage from '@/modules/travel/AdminTravelRequestsPage'
+import VehicleRequestPage from '@/modules/vehicle/VehicleRequestPage'
+import AdminVehicleRequestsPage from '@/modules/vehicle/AdminVehicleRequestsPage'
 import LoginPage from '@/modules/auth/LoginPage'
 import SignupPage from '@/modules/auth/SignupPage'
 import { staffProfileLoader } from '@/modules/staff/loader'
@@ -60,6 +62,10 @@ export const router = createBrowserRouter([
         element: <TravelRequestPage />,
       },
       {
+        path: 'vehicle-request',
+        element: <VehicleRequestPage />,
+      },
+      {
         path: 'admin',
         children: [
           {
@@ -69,6 +75,10 @@ export const router = createBrowserRouter([
           {
             path: 'travel-requests',
             element: <AdminTravelRequestsPage />,
+          },
+          {
+            path: 'vehicle-requests',
+            element: <AdminVehicleRequestsPage />,
           },
           {
             path: 'staff/:staffId',

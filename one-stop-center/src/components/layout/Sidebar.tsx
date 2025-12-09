@@ -6,6 +6,7 @@ import {
   UserRound,
   Users,
   Plane,
+  Car,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
@@ -15,6 +16,8 @@ const navItems = [
   { label: 'Staff System', icon: UserRound, path: '/staff' },
   { label: 'Travel Request', icon: Plane, path: '/travel-request' },
   { label: 'Travel Approvals', icon: Plane, path: '/admin/travel-requests' },
+  { label: 'Vehicle Request', icon: Car, path: '/vehicle-request' },
+  { label: 'Vehicle Approvals', icon: Car, path: '/admin/vehicle-requests' },
   { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
   { label: 'Library', icon: BookOpen, path: '/library' },
   { label: 'Settings', icon: Settings, path: '/settings' },

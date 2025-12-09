@@ -13,6 +13,7 @@ export interface TravelRequestSummary {
   endDateTime: string
   status: TravelRequestStatus
   totalMealAllowance?: number | null
+  travelNo?: string | null
   createdAt: string
 }
 
@@ -37,13 +38,25 @@ export async function fetchAllTravelRequests(): Promise<TravelRequestSummary[]> 
       end_datetime,
       status,
       total_meal_allowance,
+      travel_no,
       department,
       created_at
     `)
     .order('created_at', { ascending: false })
 
-  if (error || !data) {
+  if (error) {
     console.error('Error fetching travel requests:', error)
+    console.error('Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    })
+    return []
+  }
+
+  if (!data) {
+    console.warn('No data returned from travel_requests_view')
     return []
   }
 
@@ -58,6 +71,62 @@ export async function fetchAllTravelRequests(): Promise<TravelRequestSummary[]> 
     endDateTime: row.end_datetime,
     status: (row.status as TravelRequestStatus) ?? 'PENDING',
     totalMealAllowance: row.total_meal_allowance ?? null,
+    travelNo: row.travel_no ?? null,
+    createdAt: row.created_at,
+  }))
+}
+
+export async function fetchTravelRequestsByStaffId(staffId: string): Promise<TravelRequestSummary[]> {
+  if (!supabase) return []
+
+  const { data, error } = await supabase
+    .from('travel_requests_view')
+    .select(`
+      id,
+      staff_id,
+      staff_name,
+      staff_short_name,
+      destination,
+      reason,
+      start_datetime,
+      end_datetime,
+      status,
+      total_meal_allowance,
+      travel_no,
+      department,
+      created_at
+    `)
+    .eq('staff_id', staffId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching travel requests by staff ID:', error)
+    console.error('Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    })
+    return []
+  }
+
+  if (!data) {
+    console.warn('No data returned from travel_requests_view for staff ID:', staffId)
+    return []
+  }
+
+  return (data as any[]).map((row) => ({
+    id: row.id,
+    staffId: row.staff_id ?? null,
+    staffName: row.staff_name || row.staff_short_name || null,
+    department: row.department || null,
+    destination: row.destination,
+    reason: row.reason ?? null,
+    startDateTime: row.start_datetime,
+    endDateTime: row.end_datetime,
+    status: (row.status as TravelRequestStatus) ?? 'PENDING',
+    totalMealAllowance: row.total_meal_allowance ?? null,
+    travelNo: row.travel_no ?? null,
     createdAt: row.created_at,
   }))
 }
