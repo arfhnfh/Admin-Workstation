@@ -107,33 +107,45 @@ alter table car_insurance_master enable row level security;
 alter table car_insurance_history enable row level security;
 alter table car_roadtax enable row level security;
 
--- Helper: admin check exists in staff
-create policy if not exists car_master_admin_select on car_master
+-- Drop policies if they already exist (for idempotency)
+drop policy if exists car_master_admin_select on car_master;
+drop policy if exists car_master_admin_write on car_master;
+drop policy if exists car_ownership_admin_select on car_ownership;
+drop policy if exists car_ownership_admin_write on car_ownership;
+drop policy if exists car_ins_master_admin_select on car_insurance_master;
+drop policy if exists car_ins_master_admin_write on car_insurance_master;
+drop policy if exists car_ins_history_admin_select on car_insurance_history;
+drop policy if exists car_ins_history_admin_insert on car_insurance_history;
+drop policy if exists car_roadtax_admin_select on car_roadtax;
+drop policy if exists car_roadtax_admin_write on car_roadtax;
+
+-- Create admin-only policies
+create policy car_master_admin_select on car_master
   for select using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
-create policy if not exists car_master_admin_write on car_master
+create policy car_master_admin_write on car_master
   for all using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'))
   with check (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
 
-create policy if not exists car_ownership_admin_select on car_ownership
+create policy car_ownership_admin_select on car_ownership
   for select using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
-create policy if not exists car_ownership_admin_write on car_ownership
+create policy car_ownership_admin_write on car_ownership
   for all using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'))
   with check (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
 
-create policy if not exists car_ins_master_admin_select on car_insurance_master
+create policy car_ins_master_admin_select on car_insurance_master
   for select using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
-create policy if not exists car_ins_master_admin_write on car_insurance_master
+create policy car_ins_master_admin_write on car_insurance_master
   for all using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'))
   with check (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
 
-create policy if not exists car_ins_history_admin_select on car_insurance_history
+create policy car_ins_history_admin_select on car_insurance_history
   for select using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
-create policy if not exists car_ins_history_admin_insert on car_insurance_history
+create policy car_ins_history_admin_insert on car_insurance_history
   for insert with check (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
 
-create policy if not exists car_roadtax_admin_select on car_roadtax
+create policy car_roadtax_admin_select on car_roadtax
   for select using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
-create policy if not exists car_roadtax_admin_write on car_roadtax
+create policy car_roadtax_admin_write on car_roadtax
   for all using (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'))
   with check (exists (select 1 from staff s where s.auth_user_id = auth.uid() and s.role = 'admin'));
 
