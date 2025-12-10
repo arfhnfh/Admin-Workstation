@@ -61,6 +61,7 @@ export function Sidebar() {
   const adminItems = [
     { label: 'Travel Approvals', icon: Plane, path: '/admin/travel-requests' },
     { label: 'Vehicle Approvals', icon: Car, path: '/admin/vehicle-requests' },
+    { label: 'Manage Cars', icon: Car, path: '/admin/cars' },
     { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
     { label: 'Manage Library', icon: BookOpen, path: '/library/manage' },
     { label: 'Manage Room Booking', icon: Calendar, path: '/admin/room-booking' },

@@ -11,6 +11,7 @@ import VehicleRequestPage from '@/modules/vehicle/VehicleRequestPage'
 import AdminVehicleRequestsPage from '@/modules/vehicle/AdminVehicleRequestsPage'
 import RoomBookingPage from '@/modules/room-booking/RoomBookingPage'
 import AdminRoomBookingPage from '@/modules/room-booking/AdminRoomBookingPage'
+import CarListPage from '@/modules/car/CarListPage'
 import LoginPage from '@/modules/auth/LoginPage'
 import SignupPage from '@/modules/auth/SignupPage'
 import { staffProfileLoader } from '@/modules/staff/loader'
@@ -89,6 +90,10 @@ export const router = createBrowserRouter([
           {
             path: 'vehicle-requests',
             element: <AdminVehicleRequestsPage />,
+          },
+          {
+            path: 'cars',
+            element: <CarListPage />,
           },
           {
             path: 'staff/:staffId',
