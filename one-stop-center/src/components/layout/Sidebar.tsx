@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   BookOpen,
   Home,
@@ -7,23 +8,62 @@ import {
   Users,
   Plane,
   Car,
+  Calendar,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-
-const navItems = [
-  { label: 'Home', icon: Home, path: '/' },
-  { label: 'Modules', icon: LayoutGrid, path: '/modules' },
-  { label: 'Staff System', icon: UserRound, path: '/staff' },
-  { label: 'Travel Request', icon: Plane, path: '/travel-request' },
-  { label: 'Travel Approvals', icon: Plane, path: '/admin/travel-requests' },
-  { label: 'Vehicle Request', icon: Car, path: '/vehicle-request' },
-  { label: 'Vehicle Approvals', icon: Car, path: '/admin/vehicle-requests' },
-  { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
-  { label: 'Library', icon: BookOpen, path: '/library' },
-  { label: 'Settings', icon: Settings, path: '/settings' },
-]
+import { useAuthContext } from '@/hooks/useAuthContext'
+import { isUserAdmin } from '@/services/staffService'
 
 export function Sidebar() {
+  const { user } = useAuthContext()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const checkAdmin = async () => {
+      if (!user) {
+        if (isMounted) setIsAdmin(false)
+        return
+      }
+
+      try {
+        const admin = await isUserAdmin(user.id)
+        if (isMounted) setIsAdmin(admin)
+      } catch {
+        if (isMounted) setIsAdmin(false)
+      }
+    }
+
+    checkAdmin()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
+
+  const navItems = [
+    { label: 'Home', icon: Home, path: '/' },
+    { label: 'Modules', icon: LayoutGrid, path: '/modules' },
+    { label: 'Staff System', icon: UserRound, path: '/staff' },
+    { label: 'Travel Request', icon: Plane, path: '/travel-request' },
+    { label: 'Vehicle Request', icon: Car, path: '/vehicle-request' },
+    { label: 'Room Booking', icon: Calendar, path: '/room-booking' },
+    // Admin-only items
+    ...(isAdmin
+      ? [
+          { label: 'Travel Approvals', icon: Plane, path: '/admin/travel-requests' },
+          { label: 'Vehicle Approvals', icon: Car, path: '/admin/vehicle-requests' },
+          { label: 'Manage Staff', icon: Users, path: '/admin/staff' },
+          { label: 'Manage Library', icon: BookOpen, path: '/library/manage' },
+          { label: 'Manage Room Booking', icon: Calendar, path: '/admin/room-booking' },
+        ]
+      : []),
+    // Staff-facing Library (scan & borrow)
+    { label: 'Library', icon: BookOpen, path: '/library' },
+    { label: 'Settings', icon: Settings, path: '/settings' },
+  ]
+
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-card-border bg-white/90 p-6 shadow-card lg:flex">
       <div className="mb-8 flex items-center gap-3">
@@ -31,7 +71,7 @@ export function Sidebar() {
           <BookOpen className="h-6 w-6" />
         </div>
         <div>
-          <p className="text-sm text-text-muted">Arifah</p>
+          <p className="text-sm text-text-muted">Admin</p>
           <p className="text-lg font-semibold text-charcoal">Workstation</p>
         </div>
       </div>
@@ -62,4 +102,3 @@ export function Sidebar() {
     </aside>
   )
 }
-

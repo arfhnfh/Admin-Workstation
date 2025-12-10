@@ -1,5 +1,5 @@
 import QRCode from 'qrcode'
-import { chatMessages, leaderboard, libraryCategories, popularBooks } from '@/data/mockLibrary'
+import { chatMessages, libraryCategories, popularBooks } from '@/data/mockLibrary'
 import { supabase } from '@/lib/supabaseClient'
 import type {
   BookCategory,
@@ -25,6 +25,123 @@ function getFallbackAvatar(name: string) {
   return `https://ui-avatars.com/api/?name=${safeName}&background=ded2fb&color=2e2a3b`
 }
 
+function buildLeaderboardFromBooks(books: LibraryBook[], limit = 10): LibraryLeaderboardEntry[] {
+  const counts = new Map<
+    string,
+    {
+      displayName: string
+      count: number
+    }
+  >()
+
+  for (const book of books) {
+    for (const loan of book.loans) {
+      const rawName = loan.borrowerName?.trim()
+      if (!rawName) continue
+
+      const identifier = rawName.toLowerCase()
+      const existing = counts.get(identifier)
+      if (existing) {
+        existing.count += 1
+      } else {
+        counts.set(identifier, {
+          displayName: rawName,
+          count: 1,
+        })
+      }
+    }
+  }
+
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, limit)
+    .map(([identifier, info]) => ({
+      staffId: identifier,
+      name: info.displayName,
+      avatar: getFallbackAvatar(info.displayName),
+      borrowedCount: info.count,
+    }))
+}
+
+async function attachStaffProfilesToLeaderboard(
+  entries: LibraryLeaderboardEntry[],
+): Promise<LibraryLeaderboardEntry[]> {
+  if (!supabase || !entries.length) return entries
+
+  // Fetch staff profiles (including nested work.email and avatarUrl from the view)
+  const { data, error } = await supabase.from('staff_view').select('*')
+
+  if (error || !data) {
+    console.warn('Failed to load staff profiles for leaderboard', error?.message)
+    return entries
+  }
+
+  const byEmail = new Map<string, any>()
+  ;(data as any[]).forEach((row) => {
+    const email: string | undefined = row.work?.email ?? row.email ?? row.work_email
+    if (!email) return
+    const key = email.trim().toLowerCase()
+    if (!key) return
+    if (!byEmail.has(key)) {
+      byEmail.set(key, row)
+    }
+  })
+
+  // First, enrich entries with staff profile data (name/avatar/id)
+  const enriched = entries.map((entry) => {
+    const key = entry.staffId.toLowerCase()
+    const emailKey = key.includes('@') ? key : undefined
+    const usernameKey = key.includes('@') ? key.split('@')[0] : key
+
+    let staff = emailKey ? byEmail.get(emailKey) : undefined
+
+    if (!staff) {
+      // Try match by username part before @
+      staff = Array.from(byEmail.values()).find((row: any) => {
+        const email: string | undefined = row.work?.email ?? row.email ?? row.work_email
+        if (!email) return false
+        const uname = email.trim().toLowerCase().split('@')[0]
+        return uname === usernameKey
+      })
+    }
+
+    if (!staff) return entry
+
+    const displayName: string =
+      staff.fullName ||
+      staff.full_name ||
+      staff.name ||
+      entry.name
+
+    const avatarUrl: string | undefined = staff.avatarUrl ?? staff.avatar_url
+
+    return {
+      staffId: staff.id ?? entry.staffId,
+      name: displayName,
+      avatar: avatarUrl || getFallbackAvatar(displayName),
+      borrowedCount: entry.borrowedCount,
+    }
+  })
+
+  // Then, merge duplicates that now point to the same staffId (same person)
+  const merged = new Map<string, LibraryLeaderboardEntry>()
+
+  for (const entry of enriched) {
+    const key = String(entry.staffId).toLowerCase()
+    const existing = merged.get(key)
+    if (existing) {
+      merged.set(key, {
+        ...existing,
+        borrowedCount: existing.borrowedCount + entry.borrowedCount,
+      })
+    } else {
+      merged.set(key, entry)
+    }
+  }
+
+  return Array.from(merged.values()).sort((a, b) => b.borrowedCount - a.borrowedCount)
+}
+
 export async function fetchLibraryOverview(): Promise<LibraryOverview> {
   if (!supabase) {
     const store = useLibraryAdminStore.getState()
@@ -37,10 +154,13 @@ export async function fetchLibraryOverview(): Promise<LibraryOverview> {
         loans: book.loans ?? [],
       })),
     )
+
+    const leaderboardFromBooks = buildLeaderboardFromBooks(store.books)
+
     return {
       categories: libraryCategories,
       books: store.books,
-      leaderboard,
+      leaderboard: leaderboardFromBooks,
       chats: chatMessages,
     }
   }
@@ -135,33 +255,19 @@ export async function fetchLibraryOverview(): Promise<LibraryOverview> {
   store.setCategories(resolvedCategories)
   store.setBooks(normalizedBooks)
 
+  // Build leaderboard purely from actual loan records
   let dynamicLeaderboard: LibraryLeaderboardEntry[] = []
   try {
-    const { data: leaderboardRows, error: leaderboardError } = await supabase.rpc('get_library_leaderboard', {
-      limit_count: 10,
-    })
-
-    if (!leaderboardError && leaderboardRows) {
-      dynamicLeaderboard = (leaderboardRows as Array<{
-        identifier: string
-        display_name: string
-        avatar_url: string | null
-        books_borrowed: number | string
-      }>).map((row) => ({
-        staffId: row.identifier,
-        name: row.display_name,
-        avatar: row.avatar_url && row.avatar_url.length > 0 ? row.avatar_url : getFallbackAvatar(row.display_name),
-        borrowedCount: typeof row.books_borrowed === 'string' ? parseInt(row.books_borrowed, 10) : row.books_borrowed,
-      }))
-    }
+    const baseLeaderboard = buildLeaderboardFromBooks(normalizedBooks, 10)
+    dynamicLeaderboard = await attachStaffProfilesToLeaderboard(baseLeaderboard)
   } catch (error) {
-    console.warn('Failed to load Supabase leaderboard; falling back to mock leaderboard', error)
+    console.warn('Failed to build library leaderboard from books', error)
   }
 
   return {
     categories: resolvedCategories,
     books: normalizedBooks,
-    leaderboard: dynamicLeaderboard.length ? dynamicLeaderboard : leaderboard,
+    leaderboard: dynamicLeaderboard,
     chats: chatMessages,
   }
 }
@@ -259,6 +365,80 @@ export async function createBook(input: NewBookInput): Promise<LibraryBook> {
 
   useLibraryAdminStore.getState().addBook(book)
   return book
+}
+
+export async function updateBook(bookId: string, input: NewBookInput): Promise<LibraryBook> {
+  if (!supabase) {
+    const store = useLibraryAdminStore.getState()
+    const existing = store.books.find((b) => b.id === bookId)
+    if (!existing) {
+      throw new Error('Book not found in local store')
+    }
+
+    const updated: LibraryBook = {
+      ...existing,
+      title: input.title,
+      author: input.author,
+      categoryId: input.categoryId,
+      coverImage: input.coverUrl,
+      coverColor: input.coverColor ?? existing.coverColor,
+      summary: input.summary,
+      maxLoanDays: input.maxLoanDays,
+      status: input.status,
+      stats: {
+        timesBorrowed: input.timesBorrowed ?? existing.stats.timesBorrowed,
+        rating: input.rating ?? existing.stats.rating,
+      },
+    }
+
+    store.addBook(updated)
+    return updated
+  }
+
+  const { data, error } = await supabase
+    .from('books')
+    .update({
+      category_id: input.categoryId,
+      title: input.title,
+      author: input.author,
+      cover_url: input.coverUrl,
+      synopsis: input.summary,
+      max_loan_days: input.maxLoanDays,
+    })
+    .eq('id', bookId)
+    .select('*')
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Failed to update book')
+  }
+
+  const store = useLibraryAdminStore.getState()
+  const existing = store.books.find((b) => b.id === bookId)
+
+  const updated: LibraryBook = {
+    id: data.id,
+    title: data.title,
+    author: data.author,
+    categoryId: data.category_id,
+    coverImage: data.cover_url ?? input.coverUrl,
+    coverColor: input.coverColor ?? existing?.coverColor ?? '#f7d6c4',
+    borrowerName: existing?.borrowerName ?? null,
+    status: input.status,
+    dueDate: existing?.dueDate ?? null,
+    summary: data.synopsis ?? input.summary,
+    maxLoanDays: input.maxLoanDays,
+    qrCodeUrl: existing?.qrCodeUrl,
+    copyId: existing?.copyId,
+    stats: {
+      timesBorrowed: input.timesBorrowed ?? existing?.stats.timesBorrowed ?? 0,
+      rating: input.rating ?? existing?.stats.rating ?? 4.5,
+    },
+    loans: existing?.loans ?? [],
+  }
+
+  store.addBook(updated)
+  return updated
 }
 
 export async function uploadBookCover(file: File): Promise<string> {
@@ -500,7 +680,19 @@ export async function scanBookQrCode(
     throw new Error('The active loan is missing borrower information. Please contact admin.')
   }
 
-  if (normalizedRequester !== normalizedLoanBorrower) {
+  // Allow match either by full identifier OR by username part before '@'.
+  // This handles cases where one side uses the full email (arifah.hanafiah@...)
+  // and the other side only stores the username (arifah.hanafiah).
+  const requesterUsername = normalizedRequester.split('@')[0]
+  const loanUsername = normalizedLoanBorrower.split('@')[0]
+
+  const isSameBorrower =
+    normalizedRequester === normalizedLoanBorrower ||
+    requesterUsername === normalizedLoanBorrower ||
+    normalizedRequester === loanUsername ||
+    requesterUsername === loanUsername
+
+  if (!isSameBorrower) {
     throw new Error(`Only ${activeLoan.borrower_name ?? 'the original borrower'} can return this book.`)
   }
 

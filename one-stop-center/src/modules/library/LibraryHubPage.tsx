@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import {
   BookOpen,
   CalendarCheck,
@@ -18,11 +18,12 @@ import {
   QrCode,
   Send,
   Trash2,
+  BookPlus,
+  Shapes,
+  Pencil,
 } from 'lucide-react'
 import classNames from 'classnames'
 import type { BookCategory, LibraryBook, LibraryLeaderboardEntry, LibraryChatMessage } from '@/types/library'
-import { RoleToggle } from '@/components/ui/RoleToggle'
-import { useSessionStore } from '@/store/sessionStore'
 import {
   fetchLibraryOverview,
   type LibraryOverview,
@@ -97,6 +98,7 @@ function BookCard({
   onBorrowRequest,
   borrowerName,
   borrowerIdentifier,
+  onNavigateBack,
 }: {
   book: LibraryBook
   isAdmin: boolean
@@ -105,7 +107,9 @@ function BookCard({
   onBorrowRequest: (book: LibraryBook) => void
   borrowerName: string
   borrowerIdentifier?: string
+  onNavigateBack?: () => void
 }) {
+  const navigate = useNavigate()
   const statusClass =
     book.status === 'available'
       ? 'bg-emerald-100 text-emerald-700'
@@ -231,8 +235,16 @@ function BookCard({
             setTimeout(() => {
               setShowQrScanner(false)
             }, 600)
+            // Navigate back to library page after 1 second
+            setTimeout(() => {
+              onLoanSaved()
+              if (onNavigateBack) {
+                onNavigateBack()
+              }
+            }, 1000)
+          } else {
+            onLoanSaved()
           }
-          onLoanSaved()
         } else {
           alert(`QR code does not match this book.\n\nScanned: ${bookId}\nExpected: ${book.id}\n\nPlease scan the correct book.`)
         }
@@ -344,6 +356,10 @@ function BookCard({
     }
   }
 
+  const handleEditBook = () => {
+    navigate(`/library/collection?mode=book&bookId=${book.id}`)
+  }
+
   return (
     <div className="flex flex-col gap-4 rounded-3xl border border-card-border bg-white/90 p-5 shadow-card">
       <div
@@ -359,14 +375,24 @@ function BookCard({
           </span>
         )}
         {isAdmin && (
-          <button
-            type="button"
-            onClick={handleDeleteBook}
-            className="absolute left-4 top-4 flex items-center justify-center rounded-full bg-red-500 p-2 text-white shadow-lg transition hover:bg-red-600"
-            title="Delete book"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="absolute left-4 top-4 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleEditBook}
+              className="flex items-center justify-center rounded-full bg-white/90 p-2 text-charcoal shadow-lg transition hover:bg-brand.sand/80"
+              title="Edit book"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteBook}
+              className="flex items-center justify-center rounded-full bg-red-500 p-2 text-white shadow-lg transition hover:bg-red-600"
+              title="Delete book"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
       <div>
@@ -777,9 +803,15 @@ function ChatPanel({
 }
 
 export default function LibraryHubPage() {
-  const { role } = useSessionStore()
   const { user } = useAuthContext()
   const location = useLocation()
+  const navigate = useNavigate()
+
+  // Derive role from route:
+  // - `/library`        => staff view (scan & borrow)
+  // - `/library/manage` => admin view (log, manual assign, delete)
+  const isAdminView = location.pathname.includes('/library/manage')
+  const role: 'staff' | 'admin' = isAdminView ? 'admin' : 'staff'
   const localCategories = useLibraryAdminStore((state) => state.categories)
   const localBooks = useLibraryAdminStore((state) => state.books)
   const [overview, setOverview] = useState<LibraryOverview | null>(null)
@@ -885,10 +917,27 @@ export default function LibraryHubPage() {
               Borrow, return and monitor every book from one delightful interface.
             </p>
           </div>
-          <RoleToggle />
+          {isAdminView && (
+            <div className="flex items-center gap-3">
+              <Link
+                to="/library/collection?mode=category"
+                className="flex items-center gap-2 rounded-xl bg-brand.violet/10 px-4 py-2 text-sm font-semibold text-brand.violet transition hover:bg-brand.violet/20"
+              >
+                <Shapes className="h-4 w-4" />
+                Create Category
+              </Link>
+              <Link
+                to="/library/collection?mode=book"
+                className="flex items-center gap-2 rounded-xl bg-[#8c4b2d] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[#6f361f]"
+              >
+                <BookPlus className="h-4 w-4" />
+                Create Book
+              </Link>
+            </div>
+          )}
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl bg-brand.sand/60 p-4">
+          <div className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl bg-brand.sand/60 p-4">
           <div className="flex flex-1 items-center gap-2 rounded-3xl bg-white px-4 py-2 shadow-inner">
             <Search className="h-4 w-4 text-text-muted" />
             <input
@@ -902,15 +951,6 @@ export default function LibraryHubPage() {
             Search
             <ChevronRight className="h-4 w-4" />
           </button>
-          {role === 'admin' && (
-            <Link
-              to="/library/manage"
-              className="flex items-center gap-2 rounded-3xl bg-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-purple-600"
-            >
-              <Plus className="h-4 w-4" />
-              Add category / book
-            </Link>
-          )}
         </div>
 
         {categories.length > 0 && (
@@ -945,6 +985,7 @@ export default function LibraryHubPage() {
                   onBorrowRequest={handleBorrowRequest}
                   borrowerName={currentBorrowerIdentifier || user?.email || 'staff@unknown.local'}
                   borrowerIdentifier={currentBorrowerIdentifier}
+                  onNavigateBack={() => navigate('/library')}
                 />
               ))}
               {!filteredBooks.length && (
