@@ -6,9 +6,11 @@ Supabase-backed React (Vite) application that centralises Aafiyat’s internal s
 
 - **Staff Profile Module** – Mirrors the reference screen with personal/work/passport/bank sections, quick actions, and edit/export controls.
 - **Library Hub** – Gradient hero with category chips, popular carousel, chat assistant, admin-only add button, availability badges, and inline loan assignment controls.
+- **Travel Request Module** – Staff can submit travel requests with destination, dates, and meal allowances. Admins can review and approve/reject requests. Auto-generates travel numbers (TR-YYYYMMDD-XXX) upon approval.
+- **Vehicle Request Module** – Staff can request company vehicles and link them to approved travel requests via travel number selection.
 - **Leaderboard & Chat** – Podium-style borrower rankings plus a support chat dock built on the right rail.
 - **Role Switching** – Toggle between `Staff` and `Admin` to preview restricted UI states without reloading.
-- **Supabase Ready** – Typed client wrapper, env scaffolding, and SQL migration that provisions staff/library tables, views, and RLS policies.
+- **Supabase Ready** – Typed client wrapper, env scaffolding, and SQL migration that provisions staff/library/travel/vehicle tables, views, and RLS policies.
 
 ## 🧱 Tech Stack
 
@@ -34,8 +36,10 @@ npm run dev             # open http://localhost:5173
 2. Run the SQL migrations in `supabase/migrations` (via Supabase SQL Editor or CLI). They provision:
    - Staff core tables + view (`staff_view`) that powers the profile UI
    - Library catalog (`books`, `book_categories`, `book_copies`, `book_loans`)
+   - Travel requests (`travel_requests`, `travel_requests_view`) with auto-generated travel numbers
+   - Vehicle requests (`vehicle_requests`, `vehicle_requests_view`)
    - Row-Level Security policies so staff read only their data while admins manage everything
-   - Helper functions (admin bootstrap + leaderboard RPC) used by the UI
+   - Helper functions (admin bootstrap + leaderboard RPC, travel_no generation) used by the UI
 3. Generate service role and anon keys, then set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in `.env`.
 
 Until real data exists, the UI automatically falls back to the curated mock datasets in `src/data`.
