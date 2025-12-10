@@ -1019,9 +1019,9 @@ export default function TravelRequestPage() {
                   <label className="mb-2 text-sm font-semibold text-charcoal">
                     Transportation Type <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                     {['FLIGHT', 'COMPANY CAR', 'BUS', 'FERRY', 'TRAIN', 'OTHER'].map((type) => (
-                      <label key={type} className="flex items-center gap-2 rounded-xl border border-card-border bg-white p-3 cursor-pointer hover:bg-brand.sand/30">
+                      <label key={type} className="flex items-center gap-2 rounded-xl border border-card-border bg-white p-2 cursor-pointer hover:bg-brand.sand/30">
                         <input
                           type="radio"
                           name="transportationType"
@@ -1634,11 +1634,11 @@ export default function TravelRequestPage() {
                     <label className="mb-2 text-sm font-semibold text-charcoal">
                       Transportation Type <span className="text-red-500">*</span>
                     </label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                       {['FLIGHT', 'COMPANY CAR', 'BUS', 'FERRY', 'TRAIN', 'OTHER'].map((type) => (
                         <label
                           key={type}
-                          className="flex items-center gap-2 rounded-xl border border-card-border bg-white p-3 cursor-pointer hover:bg-brand.sand/30"
+                          className="flex items-center gap-2 rounded-xl border border-card-border bg-white p-2 cursor-pointer hover:bg-brand.sand/30"
                         >
                           <input
                             type="radio"
