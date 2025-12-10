@@ -55,6 +55,13 @@ export interface CarSummary {
   roadtax?: CarRoadTax
 }
 
+export interface CarUpsertInput {
+  core: Omit<CarCore, 'id'>
+  ownership?: CarOwnership
+  insurance?: CarInsurance
+  roadtax?: CarRoadTax
+}
+
 export async function fetchCars(): Promise<CarSummary[]> {
   if (!supabase) return []
 
@@ -162,4 +169,154 @@ export async function fetchCars(): Promise<CarSummary[]> {
       : undefined,
   }))
 }
+
+export async function createCar(input: CarUpsertInput): Promise<{ error?: Error }> {
+  if (!supabase) return { error: new Error('Supabase not configured') }
+  const { core, ownership, insurance, roadtax } = input
+
+  const { data: carInsert, error: carError } = await supabase
+    .from('car_master')
+    .insert({
+      vehicle_id: core.vehicleId,
+      plate_number: core.plateNumber,
+      vehicle_type: core.vehicleType,
+      brand: core.brand,
+      model: core.model,
+      variant: core.variant ?? null,
+      year: core.year ?? null,
+      engine_capacity: core.engineCapacity ?? null,
+      fuel: core.fuel ?? null,
+      chassis_no: core.chassisNo ?? null,
+      engine_no: core.engineNo ?? null,
+      status: core.status ?? 'ACTIVE',
+    })
+    .select('id')
+    .single()
+
+  if (carError || !carInsert) return { error: new Error(carError?.message || 'Failed to create car') }
+  const carId = carInsert.id as string
+
+  // ownership (1:1)
+  if (ownership) {
+    const { error } = await supabase.from('car_ownership').upsert({
+      car_id: carId,
+      registered_owner: ownership.registeredOwner ?? null,
+      subsidiary: ownership.subsidiary ?? null,
+      registration_date: ownership.registrationDate ?? null,
+      ownership_type: ownership.ownershipType ?? null,
+      financier: ownership.financier ?? null,
+      hp_end_date: ownership.hpEndDate ?? null,
+    })
+    if (error) return { error: new Error(error.message) }
+  }
+
+  // insurance master (current)
+  if (insurance) {
+    // ensure single row per car
+    await supabase.from('car_insurance_master').delete().eq('car_id', carId)
+    const { error } = await supabase.from('car_insurance_master').insert({
+      car_id: carId,
+      insurer: insurance.insurer ?? null,
+      broker: insurance.broker ?? null,
+      policy_no: insurance.policyNo ?? null,
+      coverage: insurance.coverage ?? null,
+      coverage_start: insurance.coverageStart ?? null,
+      coverage_end: insurance.coverageEnd ?? null,
+      sum_insured: insurance.sumInsured ?? null,
+      premium: insurance.premium ?? null,
+      ncd: insurance.ncd ?? null,
+      windscreen: insurance.windscreen ?? null,
+      endorsement: insurance.endorsement ?? null,
+    })
+    if (error) return { error: new Error(error.message) }
+  }
+
+  // roadtax (latest)
+  if (roadtax) {
+    await supabase.from('car_roadtax').delete().eq('car_id', carId)
+    const { error } = await supabase.from('car_roadtax').insert({
+      car_id: carId,
+      period_start: roadtax.periodStart ?? null,
+      period_end: roadtax.periodEnd ?? null,
+      amount: roadtax.amount ?? null,
+      roadtax_type: roadtax.roadtaxType ?? null,
+    })
+    if (error) return { error: new Error(error.message) }
+  }
+
+  return {}
+}
+
+export async function updateCar(carId: string, input: CarUpsertInput): Promise<{ error?: Error }> {
+  if (!supabase) return { error: new Error('Supabase not configured') }
+  const { core, ownership, insurance, roadtax } = input
+
+  const { error: carError } = await supabase
+    .from('car_master')
+    .update({
+      vehicle_id: core.vehicleId,
+      plate_number: core.plateNumber,
+      vehicle_type: core.vehicleType,
+      brand: core.brand,
+      model: core.model,
+      variant: core.variant ?? null,
+      year: core.year ?? null,
+      engine_capacity: core.engineCapacity ?? null,
+      fuel: core.fuel ?? null,
+      chassis_no: core.chassisNo ?? null,
+      engine_no: core.engineNo ?? null,
+      status: core.status ?? 'ACTIVE',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', carId)
+
+  if (carError) return { error: new Error(carError.message) }
+
+  if (ownership) {
+    const { error } = await supabase.from('car_ownership').upsert({
+      car_id: carId,
+      registered_owner: ownership.registeredOwner ?? null,
+      subsidiary: ownership.subsidiary ?? null,
+      registration_date: ownership.registrationDate ?? null,
+      ownership_type: ownership.ownershipType ?? null,
+      financier: ownership.financier ?? null,
+      hp_end_date: ownership.hpEndDate ?? null,
+    })
+    if (error) return { error: new Error(error.message) }
+  }
+
+  if (insurance) {
+    await supabase.from('car_insurance_master').delete().eq('car_id', carId)
+    const { error } = await supabase.from('car_insurance_master').insert({
+      car_id: carId,
+      insurer: insurance.insurer ?? null,
+      broker: insurance.broker ?? null,
+      policy_no: insurance.policyNo ?? null,
+      coverage: insurance.coverage ?? null,
+      coverage_start: insurance.coverageStart ?? null,
+      coverage_end: insurance.coverageEnd ?? null,
+      sum_insured: insurance.sumInsured ?? null,
+      premium: insurance.premium ?? null,
+      ncd: insurance.ncd ?? null,
+      windscreen: insurance.windscreen ?? null,
+      endorsement: insurance.endorsement ?? null,
+    })
+    if (error) return { error: new Error(error.message) }
+  }
+
+  if (roadtax) {
+    await supabase.from('car_roadtax').delete().eq('car_id', carId)
+    const { error } = await supabase.from('car_roadtax').insert({
+      car_id: carId,
+      period_start: roadtax.periodStart ?? null,
+      period_end: roadtax.periodEnd ?? null,
+      amount: roadtax.amount ?? null,
+      roadtax_type: roadtax.roadtaxType ?? null,
+    })
+    if (error) return { error: new Error(error.message) }
+  }
+
+  return {}
+}
+
 
