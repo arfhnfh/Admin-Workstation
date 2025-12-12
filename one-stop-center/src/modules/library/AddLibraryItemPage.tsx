@@ -424,7 +424,6 @@ export default function AddLibraryItemPage() {
                 <div
                   className="relative h-44 rounded-3xl shadow-2xl"
                   style={{
-                    backgroundImage: `url(${preview ?? 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80'})`,
                     backgroundImage: `url(${preview ?? DEFAULT_COVER})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',

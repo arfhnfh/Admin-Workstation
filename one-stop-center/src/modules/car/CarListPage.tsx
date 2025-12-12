@@ -6,6 +6,7 @@ import {
   type CarUpsertInput,
   createCar,
   updateCar,
+  deleteCar,
   type CarStatus,
 } from '@/services/carService'
 
@@ -20,6 +21,7 @@ export default function CarListPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | CarStatus>('ALL')
   const [brandFilter, setBrandFilter] = useState<string>('ALL')
   const [typeFilter, setTypeFilter] = useState<string>('ALL')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -91,6 +93,16 @@ export default function CarListPage() {
     setCars(refreshed)
     setSaving(false)
     setDrawerOpen(false)
+  }
+
+  const handleDelete = async (carId: string) => {
+    const ok = window.confirm('Delete this vehicle? This removes ownership, insurance, and road tax records.')
+    if (!ok) return
+    setDeletingId(carId)
+    await deleteCar(carId)
+    const refreshed = await fetchCars()
+    setCars(refreshed)
+    setDeletingId(null)
   }
 
   return (
@@ -254,6 +266,13 @@ export default function CarListPage() {
                 </button>
                 <button className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100">
                   Disable
+                </button>
+                <button
+                  onClick={() => handleDelete(car.core.id)}
+                  disabled={deletingId === car.core.id}
+                  className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+                >
+                  {deletingId === car.core.id ? 'Deleting…' : 'Delete'}
                 </button>
               </div>
             </div>

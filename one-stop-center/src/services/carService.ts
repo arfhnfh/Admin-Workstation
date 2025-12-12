@@ -319,4 +319,11 @@ export async function updateCar(carId: string, input: CarUpsertInput): Promise<{
   return {}
 }
 
+export async function deleteCar(carId: string): Promise<{ error?: Error }> {
+  if (!supabase) return { error: new Error('Supabase not configured') }
+  const { error } = await supabase.from('car_master').delete().eq('id', carId)
+  if (error) return { error: new Error(error.message) }
+  return {}
+}
+
 
