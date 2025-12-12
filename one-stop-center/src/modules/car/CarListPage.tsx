@@ -215,21 +215,25 @@ export default function CarListPage() {
                   <InfoCard
                     title="Ownership"
                     icon={<CarFront className="h-4 w-4" />}
-                    lines={[
-                      car.ownership?.registeredOwner || 'Owner ?',
-                      car.ownership?.subsidiary || 'Subsidiary ?',
-                      car.ownership?.ownershipType || 'Type ?',
+                    items={[
+                      { label: 'Registered Owner', value: car.ownership?.registeredOwner || '—' },
+                      { label: 'Subsidiary', value: car.ownership?.subsidiary || '—' },
+                      { label: 'Ownership Type', value: car.ownership?.ownershipType || '—' },
                     ]}
                   />
                   <InfoCard
                     title="Insurance"
                     icon={<ShieldCheck className="h-4 w-4" />}
-                    lines={[
-                      car.insurance?.policyNo ? `Policy: ${car.insurance.policyNo}` : 'Policy ?',
-                      car.insurance?.insurer || 'Insurer ?',
-                      car.insurance?.coverage && car.insurance?.coverageStart && car.insurance?.coverageEnd
-                        ? `${car.insurance.coverage} (${car.insurance.coverageStart} → ${car.insurance.coverageEnd})`
-                        : 'Coverage dates ?',
+                    items={[
+                      { label: 'Policy No', value: car.insurance?.policyNo || '—' },
+                      { label: 'Insurer', value: car.insurance?.insurer || '—' },
+                      {
+                        label: 'Coverage',
+                        value:
+                          car.insurance?.coverage && car.insurance?.coverageStart && car.insurance?.coverageEnd
+                            ? `${car.insurance.coverage} (${car.insurance.coverageStart} → ${car.insurance.coverageEnd})`
+                            : '—',
+                      },
                     ]}
                     pill={
                       car.insurance?.sumInsured
@@ -240,12 +244,16 @@ export default function CarListPage() {
                   <InfoCard
                     title="Road Tax"
                     icon={<Gauge className="h-4 w-4" />}
-                    lines={[
-                      car.roadtax?.periodStart && car.roadtax?.periodEnd
-                        ? `${car.roadtax.periodStart} → ${car.roadtax.periodEnd}`
-                        : 'Period ?',
-                      car.roadtax?.roadtaxType || 'Type ?',
-                      car.roadtax?.amount ? `RM ${car.roadtax.amount}` : 'Amount ?',
+                    items={[
+                      {
+                        label: 'Period',
+                        value:
+                          car.roadtax?.periodStart && car.roadtax?.periodEnd
+                            ? `${car.roadtax.periodStart} → ${car.roadtax.periodEnd}`
+                            : '—',
+                      },
+                      { label: 'Type', value: car.roadtax?.roadtaxType || '—' },
+                      { label: 'Amount', value: car.roadtax?.amount ? `RM ${car.roadtax.amount}` : '—' },
                     ]}
                   />
                 </div>
@@ -295,12 +303,12 @@ export default function CarListPage() {
 function InfoCard({
   title,
   icon,
-  lines,
+  items,
   pill,
 }: {
   title: string
   icon: React.ReactNode
-  lines: (string | null | undefined)[]
+  items: { label: string; value: string | null | undefined }[]
   pill?: { label: string; tone: 'blue' | 'green' | 'amber' }
 }) {
   const tone =
@@ -316,11 +324,12 @@ function InfoCard({
         {icon}
         {title}
       </div>
-      <div className="space-y-1">
-        {lines.map((line, idx) => (
-          <p key={idx} className="text-xs text-text-muted">
-            {line || '-'}
-          </p>
+      <div className="space-y-2">
+        {items.map((item, idx) => (
+          <div key={idx} className="text-xs">
+            <p className="text-[11px] uppercase tracking-wide text-text-muted">{item.label}</p>
+            <p className="text-sm text-charcoal">{item.value || '—'}</p>
+          </div>
         ))}
       </div>
       {pill && <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}>{pill.label}</span>}
